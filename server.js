@@ -17,7 +17,7 @@ const db = mysql.createConnection({
   host: 'gateway01.ap-southeast-1.prod.alicloud.tidbcloud.com',
   user: '4Gkg3KNMCHKXBk4.root',
   password: 'LcBjwYGJt3vXgRhy',
-  database: 'sys',
+  database: 'test',
   port: 4000,
   ssl: { 
     rejectUnauthorized: false,
