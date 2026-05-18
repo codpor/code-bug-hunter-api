@@ -21,7 +21,7 @@ async function simulateLogin() {
     const user = document.getElementById('login-user').value;
     const pass = document.getElementById('login-pass').value;
     try {
-        const res = await fetch('http://localhost:3000/api/login', {
+        const res = await fetch('/api/login', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username: user, password: pass })
         });
@@ -53,7 +53,7 @@ async function simulateRegister() {
     const pass = document.getElementById('reg-pass').value;
     const role = document.getElementById('reg-role').value;
     try {
-        const res = await fetch('http://localhost:3000/api/register', {
+        const res = await fetch('/api/register', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username: user, email: email, password: pass, role: role })
         });
@@ -83,7 +83,7 @@ async function fetchAdminQuestions() {
     }
 
     try {
-        const res = await fetch(`http://localhost:3000/api/admin/questions?lang=${lang}&level=${lvl}`);
+        const res = await fetch(`/api/admin/questions?lang=${lang}&level=${lvl}`);
         const data = await res.json();
         const listContainer = document.getElementById('admin-soal-list');
         
@@ -204,7 +204,7 @@ async function saveSoal() {
 async function editSoal(id, lang, lvl) {
     try {
         // Ambil data spesifik dari filter yang sama
-        const res = await fetch(`http://localhost:3000/api/admin/questions?lang=${lang}&level=${lvl}`);
+        const res = await fetch(`/api/admin/questions?lang=${lang}&level=${lvl}`);
         const data = await res.json();
         const soal = data.find(q => q.id === id);
         
@@ -232,7 +232,7 @@ async function editSoal(id, lang, lvl) {
 async function deleteSoal(id) {
     if(confirm("Yakin ingin menghapus soal ID " + id + "?")) {
         try {
-            const res = await fetch(`http://localhost:3000/api/admin/questions/${id}`, { method: 'DELETE' });
+            const res = await fetch(`/api/admin/questions/${id}`, { method: 'DELETE' });
             if(res.ok) {
                 alert("Soal berhasil dihapus!");
                 fetchAdminQuestions(); // Refresh list
@@ -251,7 +251,7 @@ let hp = 3; let score = 0; let attempts = 0; let hintUsed = false;
 
 async function loadLeaderboard() {
     try {
-        const res = await fetch('http://localhost:3000/api/leaderboard');
+        const res = await fetch('/api/leaderboard');
         const data = await res.json();
         const tbody = document.getElementById('leaderboard-body');
         tbody.innerHTML = '';
@@ -282,7 +282,7 @@ function checkReadyToPlay() {
 
 async function fetchQuestionsAndStart() {
     try {
-        const res = await fetch(`http://localhost:3000/api/questions?lang=${selectedLang}&level=${selectedLevel}`);
+        const res = await fetch(`/api/questions?lang=${selectedLang}&level=${selectedLevel}`);
         const data = await res.json();
         if(data.length === 0) { alert("Soal untuk kategori ini belum tersedia di database."); return; }
         
@@ -381,7 +381,7 @@ async function showAppreciation() {
     document.getElementById('badge-title').innerText = badge; document.getElementById('badge-icon').innerText = icon;
     if(currentUser.id && currentUser.role !== 'guru') {
         try {
-            await fetch('http://localhost:3000/api/save-score', {
+            await fetch('/api/save-score', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ user_id: currentUser.id, score: score, badge: badge })
             });
