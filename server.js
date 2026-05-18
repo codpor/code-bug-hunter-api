@@ -3,6 +3,9 @@ const mysql = require('mysql2');
 const path = require('path');
 const cors = require('cors');
 
+console.log("--- STARTUP: KONEKSI DATABASE ---");
+console.log("HOST DATABASE:", 'gateway01.ap-southeast-1.prod.alicloud.tidbcloud.com');
+
 const app = express();
 const PORT = 3000;
 
@@ -12,8 +15,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 const db = mysql.createConnection({
   host: 'gateway01.ap-southeast-1.prod.alicloud.tidbcloud.com',
-  user: '4Gkg3KNMCHKXbk4.root',
-  password: 'qFDywO42YJLIh2gW',
+  user: '4Gkg3KNMCHKXBk4.root',
+  password: 'LcBjwYGJt3vXgRhy',
   database: 'test',
   port: 4000,
   ssl: { 
