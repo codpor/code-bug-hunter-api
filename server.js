@@ -11,12 +11,15 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 const db = mysql.createConnection({
-    host: 'gateway01.ap-southeast-1.prod.alicloud.tidbcloud.com',
-    user: '4Gkg3KNMCHKXbk4.root',
-    password: 'qFDywO42YJLIh2gW',
-    database: 'test',
-    port: 4000,
-    ssl: { rejectUnauthorized: false }
+  host: 'gateway01.ap-southeast-1.prod.alicloud.tidbcloud.com',
+  user: '4Gkg3KNMCHKXbk4.root',
+  password: 'qFDywO42YJLIh2gW',
+  database: 'test',
+  port: 4000,
+  ssl: { 
+    rejectUnauthorized: false,
+    minVersion: 'TLSv1.2' 
+  }
 });
 
 db.connect((err) => {
