@@ -1,11 +1,65 @@
-/* BASE STYLES */
-body { margin: 0; padding: 0; background-color: #0d1117; color: #c9d1d9; font-family: 'Courier New', Courier, monospace; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
-#game-container { width: 800px; height: 600px; background-color: #161b22; border: 2px solid #3fb950; position: relative; box-shadow: 0 0 20px rgba(63, 185, 80, 0.2); overflow: hidden; }
-.frame { display: none; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; text-align: center; padding: 20px; box-sizing: border-box; }
-.active { display: flex; }
+/* BASE STYLES (UPDATED RESPONSIVE) */
+body { 
+    margin: 0; 
+    padding: 0; 
+    background-color: #0d1117; 
+    color: #c9d1d9; 
+    font-family: 'JetBrains Mono', 'Courier New', Courier, monospace; 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    height: 100vh; 
+    overflow: hidden; 
+}
+.terminal-input, button, .code-line {
+    font-family: 'JetBrains Mono', 'Courier New', Courier, monospace;
+}
+
+#game-container { 
+    width: 95vw; /* Lebar dinamis 95% dari layar */
+    max-width: 900px; /* Batas maksimal agar tidak terlalu melar di monitor besar */
+    height: 90vh; /* Tinggi dinamis 90% dari layar */
+    max-height: 700px; 
+    background-color: #161b22; 
+    border: 2px solid #3fb950; 
+    position: relative; 
+    box-shadow: 0 0 20px rgba(63, 185, 80, 0.2); 
+    overflow-y: auto; /* Mengizinkan scroll di dalam container jika konten panjang */
+    overflow-x: hidden;
+    border-radius: 8px; /* Sedikit sudut melengkung agar lebih modern */
+}
+
+.frame { 
+    display: none; 
+    flex-direction: column; 
+    align-items: center; 
+    justify-content: center; 
+    width: 100%; 
+    min-height: 100%; /* Memastikan konten mengisi penuh tinggi container */
+    text-align: center; 
+    padding: 30px 20px; 
+    box-sizing: border-box; 
+    opacity: 0;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.active { display: flex; animation: fadeIn 0.4s ease-in-out forwards; }
 h1, h2 { color: #3fb950; }
 .main-title { font-size: 3em; margin-bottom: 5px; }
 .subtitle { margin-bottom: 40px; color: #8b949e; }
+
+/* MEDIA QUERY UNTUK LAYAR KECIL (MOBILE/TABLET) */
+@media (max-width: 600px) {
+    .main-title { font-size: 2em; }
+    .auth-form { width: 90%; }
+    #hud { flex-direction: column; gap: 10px; font-size: 14px; align-items: center; }
+    .review-container { flex-direction: column; }
+    .soal-card-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+    #code-editor { width: 95%; padding: 10px; }
+}
 
 /* FORMS & BUTTONS */
 .auth-form { display: flex; flex-direction: column; width: 60%; max-width: 400px; gap: 15px; }
@@ -66,3 +120,53 @@ button.selected { background-color: #3fb950; color: #000; border-color: #3fb950;
 ::-webkit-scrollbar-track { background: #0d1117; }
 ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: #3fb950; }
+
+button:active {
+    transform: scale(0.95);
+}
+
+/* =========================================
+   TOAST NOTIFICATION STYLES
+   ========================================= */
+#toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.toast {
+    min-width: 250px;
+    padding: 15px 20px;
+    border-radius: 5px;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: bold;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    transform: translateX(100%);
+    animation: slideInRight 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+}
+
+/* Tipe-tipe notifikasi */
+.toast.success { background-color: #238636; border-left: 5px solid #3fb950; }
+.toast.error { background-color: #da3633; border-left: 5px solid #ff7b72; }
+.toast.info { background-color: #1f6feb; border-left: 5px solid #79c0ff; }
+
+/* Animasi untuk menghilang */
+.toast.fade-out {
+    animation: fadeOutRight 0.4s ease-in forwards;
+}
+
+@keyframes slideInRight {
+    from { opacity: 0; transform: translateX(100%); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes fadeOutRight {
+    from { opacity: 1; transform: translateX(0); }
+    to { opacity: 0; transform: translateX(100%); }
+}

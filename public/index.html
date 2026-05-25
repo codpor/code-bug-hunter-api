@@ -4,7 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Code Bug Hunter - Arif Fakhry Maulana</title>
+    <link rel="icon" type="image/png" href="favicon.png?>99">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
 
@@ -15,7 +20,6 @@
 
     <div id="game-container">
         
-        <!-- FRAME LANDING PAGE -->
         <div id="frame-landing" class="frame active">
             <h1 class="main-title">CODE BUG HUNTER</h1>
             <p class="subtitle">Platform Belajar Debugging Interaktif</p>
@@ -27,7 +31,6 @@
             <button class="action-btn" onclick="playSFX(); goToFrame('frame-login')">MULAI PETUALANGAN</button>
         </div>
 
-        <!-- FRAME LOGIN -->
         <div id="frame-login" class="frame">
             <h2 style="color: #58a6ff;">SYSTEM LOGIN</h2>
             <form id="login-form" class="auth-form" onsubmit="event.preventDefault(); simulateLogin();">
@@ -39,7 +42,6 @@
             <button class="secondary-btn" onclick="playSFX(); goToFrame('frame-landing')">KEMBALI</button>
         </div>
 
-        <!-- FRAME REGISTER -->
         <div id="frame-register" class="frame">
             <h2 style="color: #e3b341;">REGISTRASI HUNTER BARU</h2>
             <form id="register-form" class="auth-form" onsubmit="event.preventDefault(); simulateRegister();">
@@ -56,12 +58,8 @@
             <p style="margin-top: 20px; font-size: 14px;">Sudah punya akun? <a href="#" onclick="playSFX(); goToFrame('frame-login')" style="color: #58a6ff;">Login di sini</a></p>
         </div>
 
-        <!-- ============================================== -->
-        <!-- FRAME GURU (DASHBOARD MANAJEMEN SOAL DETIL)    -->
-        <!-- ============================================== -->
         <div id="frame-guru" class="frame" style="padding: 20px; align-items: flex-start; justify-content: flex-start;">
             
-            <!-- HEADER -->
             <div style="display: flex; justify-content: space-between; width: 100%; align-items: center; border-bottom: 2px solid #3fb950; padding-bottom: 10px; margin-bottom: 20px;">
                 <h2 style="margin: 0; color: #3fb950;">DASHBOARD GURU</h2>
                 <div>
@@ -70,33 +68,39 @@
                 </div>
             </div>
             
-            <!-- FILTER AREA -->
-            <div style="width: 100%; display: flex; gap: 15px; margin-bottom: 20px; align-items: center; background: #161b22; padding: 15px; border-radius: 5px; border: 1px solid #30363d; box-sizing: border-box;">
-                <select id="filter-lang" class="terminal-input" style="flex: 1; padding: 10px; margin: 0;">
-                    <option value="" disabled selected>-- Pilih Bahasa --</option>
+            <div style="width: 100%; display: flex; gap: 10px; margin-bottom: 20px; align-items: center; background: #161b22; padding: 15px; border-radius: 5px; border: 1px solid #30363d; box-sizing: border-box; flex-wrap: wrap;">
+                <select id="filter-lang" class="terminal-input" style="flex: 1; padding: 10px; margin: 0; min-width: 120px;">
+                    <option value="" disabled selected>-- Bahasa --</option>
                     <option value="python">Python</option>
                     <option value="javascript">JavaScript</option>
                     <option value="java">Java</option>
                     <option value="php">PHP</option>
                     <option value="cpp">C++</option>
+                    <option value="css">CSS</option>
                 </select>
-                <select id="filter-lvl" class="terminal-input" style="flex: 1; padding: 10px; margin: 0;">
-                    <option value="" disabled selected>-- Pilih Level --</option>
+                <select id="filter-lvl" class="terminal-input" style="flex: 1; padding: 10px; margin: 0; min-width: 120px;">
+                    <option value="" disabled selected>-- Level --</option>
                     <option value="mudah">Mudah</option>
                     <option value="sedang">Sedang</option>
                     <option value="sulit">Sulit</option>
                 </select>
-                <button class="action-btn" style="padding: 10px 20px;" onclick="playSFX(); fetchAdminQuestions()">TAMPILKAN SOAL</button>
-                <button class="action-btn" style="padding: 10px 20px; background-color: #58a6ff;" onclick="playSFX(); openSoalModal()">+ TAMBAH SOAL</button>
+                <button class="action-btn" style="padding: 10px 15px;" onclick="playSFX(); fetchAdminQuestions()">TAMPILKAN</button>
+                
+                <button class="action-btn" style="padding: 10px 15px; background-color: #58a6ff;" onclick="playSFX(); openSoalModal()">+ TAMBAH</button>
+                <button class="action-btn" style="padding: 10px 15px; background-color: #e3b341; color: #000;" onclick="playSFX(); fetchTeacherAnalytics()">📊 ANALITIK KELAS</button>
+                
+                <div style="border-left: 2px solid #30363d; height: 35px; margin: 0 5px;"></div>
+
+                <button class="secondary-btn" style="padding: 10px 15px; border-color: #58a6ff; color: #58a6ff; margin: 0;" title="Unduh File Backup" onclick="playSFX(); exportSoal()">⬇️ BACKUP SOAL</button>
+                <button class="secondary-btn" style="padding: 10px 15px; border-color: #e3b341; color: #e3b341; margin: 0;" title="Pulihkan File Backup" onclick="playSFX(); document.getElementById('import-file').click()">⬆️ RESTORE SOAL</button>
+                <input type="file" id="import-file" style="display: none;" accept=".json" onchange="importSoal(event)">
             </div>
 
-            <!-- CARD LIST AREA -->
             <div id="admin-soal-list" style="width: 100%; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; padding-right: 10px; flex: 1;">
                 <p style="color: #8b949e; text-align: center; margin-top: 50px;">Silakan pilih bahasa dan tingkatan di atas untuk memuat daftar soal.</p>
             </div>
         </div>
 
-        <!-- OVERLAY MODAL FORM SOAL (GURU) -->
         <div id="overlay-guru-form" class="overlay">
             <div class="popup-box" style="width: 85%; max-height: 90vh; overflow-y: auto; text-align: left;">
                 <h2 id="modal-soal-title" style="color: #58a6ff; margin-top: 0;">TAMBAH SOAL</h2>
@@ -107,8 +111,12 @@
                         <div style="flex: 1;">
                             <label>Bahasa:</label>
                             <select id="soal-lang" class="terminal-input" style="width: 100%; padding: 10px;" required>
-                                <option value="python">Python</option><option value="javascript">JavaScript</option>
-                                <option value="java">Java</option><option value="php">PHP</option><option value="cpp">C++</option>
+                                <option value="python">Python</option>
+                                <option value="javascript">JavaScript</option>
+                                <option value="java">Java</option>
+                                <option value="php">PHP</option>
+                                <option value="cpp">C++</option>
+                                <option value="css">CSS</option>
                             </select>
                         </div>
                         <div style="flex: 1;">
@@ -126,8 +134,7 @@
                     </div>
 
                     <label>Kode Program (Pisahkan baris dengan Enter):</label>
-                    <textarea id="soal-code" class="terminal-input" style="width: 100%; height: 100px; padding: 10px; margin-bottom: 10px;" required placeholder="def fungsi():
-    print('Halo')"></textarea>
+                    <textarea id="soal-code" class="terminal-input" style="width: 100%; height: 100px; padding: 10px; margin-bottom: 10px;" required placeholder="def fungsi():\n    print('Halo')"></textarea>
 
                     <div style="display: flex; gap: 10px; margin-bottom: 10px;">
                         <div style="flex: 1;">
@@ -160,10 +167,41 @@
                 </form>
             </div>
         </div>
-        <!-- ============================================== -->
 
-
-        <!-- FRAME 01: DASHBOARD (SISWA) -->
+        <div id="overlay-analytics" class="overlay">
+            <div class="popup-box" style="width: 80%; max-height: 80vh; overflow-y: auto; text-align: left;">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #30363d; padding-bottom: 10px; margin-bottom: 15px;">
+                    <h2 style="color: #e3b341; margin: 0;">📊 ANALITIK EVALUASI KELAS</h2>
+                    <button class="secondary-btn" style="margin:0; padding: 5px 10px; border-color:#f85149; color:#f85149;" onclick="playSFX(); document.getElementById('overlay-analytics').style.display='none'">TUTUP</button>
+                </div>
+                <p style="color: #c9d1d9; margin-bottom: 20px;">Daftar 10 Soal paling "mematikan" (paling banyak menjebak siswa dengan tingkat kesalahan tertinggi).</p>
+                
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <select id="analytics-lang" class="terminal-input" style="padding: 5px 10px;" onchange="fetchTeacherAnalytics()">
+                        <option value="">Semua Bahasa</option>
+                        <option value="python">Python</option>
+                        <option value="javascript">JavaScript</option>
+                        <option value="java">Java</option>
+                        <option value="php">PHP</option>
+                        <option value="cpp">C++</option>
+                        <option value="css">CSS</option>
+                    </select>
+                    <select id="analytics-lvl" class="terminal-input" style="padding: 5px 10px;" onchange="fetchTeacherAnalytics()">
+                        <option value="">Semua Level</option><option value="mudah">Mudah</option><option value="sedang">Sedang</option><option value="sulit">Sulit</option>
+                    </select>
+                </div>
+                <table class="leaderboard-table" style="width: 100%;">
+                    <thead>
+                        <tr>
+                            <th>ID Soal</th><th>Bahasa</th><th>Level</th><th>Error Type</th><th>Total Dijawab</th><th>Total Gagal (Klik Salah)</th><th>Akurasi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="analytics-body">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+        
         <div id="frame-01" class="frame">
             <h1 class="main-title" style="font-size: 2.5em;">DASHBOARD</h1>
             <p class="subtitle">Selamat datang, <span id="display-username" style="color: #3fb950;">Hunter</span>!</p>
@@ -173,11 +211,39 @@
             </div>
             <div class="menu-buttons">
                 <button onclick="playSFX(); loadLeaderboard()" style="color: #e3b341;">LEADERBOARD</button>
+                <button onclick="playSFX(); showStudentStats()" style="color: #58a6ff; border-color: #58a6ff;">RAPOR SAYA</button>
                 <button onclick="playSFX(); logOut()" style="border-color: #f85149; color: #f85149;">LOGOUT</button>
             </div>
         </div>
 
-        <!-- FRAME LEADERBOARD -->
+        <div id="frame-rapor" class="frame">
+            <h2 style="color: #58a6ff;">RAPOR AKADEMIK HUNTER</h2>
+            
+            <div style="display: flex; gap: 10px; margin-bottom: 15px; width: 60%;">
+                <select id="rapor-lang" class="terminal-input" style="flex:1; padding: 8px;" onchange="showStudentStats()">
+                    <option value="">Semua Bahasa</option>
+                    <option value="python">Python</option>
+                    <option value="javascript">JavaScript</option>
+                    <option value="java">Java</option>
+                    <option value="php">PHP</option>
+                    <option value="cpp">C++</option>
+                    <option value="css">CSS</option>
+                </select>
+                <select id="rapor-lvl" class="terminal-input" style="flex:1; padding: 8px;" onchange="showStudentStats()">
+                    <option value="">Semua Level</option><option value="mudah">Mudah</option><option value="sedang">Sedang</option><option value="sulit">Sulit</option>
+                </select>
+            </div>
+
+            <div style="background: #161b22; border: 1px solid #30363d; border-radius: 5px; padding: 20px; width: 60%; text-align: left; font-size: 18px; margin-bottom: 20px;">
+                <p>📝 Total Soal Dikerjakan: <b id="stat-total" style="color: #c9d1d9;">0</b></p>
+                <p>✅ Jawaban Benar: <b id="stat-benar" style="color: #3fb950;">0</b></p>
+                <p>❌ Kesalahan Kode (Gagal): <b id="stat-gagal" style="color: #f85149;">0</b></p>
+                <hr style="border-color: #30363d; margin: 15px 0;">
+                <p>🎯 Akurasi Pemahaman: <b id="stat-akurasi" style="color: #e3b341; font-size: 24px;">0%</b></p>
+            </div>
+            <button onclick="playSFX(); goToFrame('frame-01')">KEMBALI KE DASHBOARD</button>
+        </div>
+
         <div id="frame-leaderboard" class="frame">
             <h2 style="color: #e3b341;">TOP 10 BUG HUNTERS</h2>
             <div style="width: 80%; max-height: 60%; overflow-y: auto; background: #0d1117; border: 1px solid #30363d; border-radius: 5px; margin-bottom: 20px;">
@@ -189,18 +255,20 @@
             <button onclick="playSFX(); goToFrame('frame-01')">KEMBALI KE DASHBOARD</button>
         </div>
 
-        <!-- FRAME 02: PANDUAN -->
         <div id="frame-02" class="frame">
             <h2>PANDUAN & DASAR DEBUGGING</h2>
-            <div class="instruction-text">
+            <div class="instruction-text" style="text-align: left; background: #161b22; padding: 20px; border-radius: 5px; border: 1px solid #30363d; margin-bottom: 20px;">
                 <p>1. <strong>Sistem Permainan:</strong> Terdapat 10 soal per sesi. Setiap soal diberi 5x kesempatan mencoba.</p>
                 <p>2. <strong>Nyawa (HP):</strong> HP awal adalah 3. HP akan berkurang 1 jika kamu menggunakan HINT atau jika kamu gagal 5x dalam satu soal.</p>
-                <p>3. <strong>Penilaian:</strong> Jawaban benar +100 poin. Game otomatis selesai jika ke-10 soal habis atau HP menyentuh 0.</p>
+                <p>3. <strong>Penilaian Poin Dasar:</strong> Level Mudah = 100, Sedang = 200, Sulit = 300.</p>
+                <p>4. <strong>Aturan Bonus & Penalti:</strong> 
+                    <br>✔️ <b>Bonus Kecepatan</b> (maks +60 poin) HANYA berlaku jika kamu langsung menjawab benar di kesempatan pertama.
+                    <br>⚠️ <b>Menggunakan HINT</b> akan memotong poin dasar soal sebanyak 50%!</p>
+                <p>5. <strong>Target Gelar (Badge):</strong> Kumpulkan minimal <b>1.500 poin</b> untuk gelar <i>Senior Developer</i>, dan raih <b>3.000 poin</b> untuk gelar tertinggi <i>Master Bug Hunter</i>!</p>
             </div>
             <button onclick="playSFX(); goToFrame('frame-01')">MENGERTI</button>
         </div>
 
-        <!-- FRAME 03: PILIH BAHASA & LEVEL -->
         <div id="frame-03" class="frame">
             <h2>PILIH BAHASA PEMROGRAMAN</h2>
             <div class="selection-grid">
@@ -209,6 +277,7 @@
                 <button id="lang-java" onclick="playSFX(); selectLang('java')">JAVA</button>
                 <button id="lang-php" onclick="playSFX(); selectLang('php')">PHP</button>
                 <button id="lang-cpp" onclick="playSFX(); selectLang('cpp')">C++</button>
+                <button id="lang-css" onclick="playSFX(); selectLang('css')">CSS</button>
             </div>
             <h2 style="margin-top: 30px;">PILIH TINGKAT KESULITAN</h2>
             <div class="selection-grid">
@@ -220,13 +289,12 @@
             <button class="secondary-btn" onclick="playSFX(); goToFrame('frame-01')">KEMBALI</button>
         </div>
 
-        <!-- FRAME 04: GAMEPLAY EDITOR -->
         <div id="frame-04" class="frame">
             <div id="hud">
                 <span class="hp-stat">HP: <span id="hp-display">♥♥♥</span></span>
                 <span class="score-stat">SKOR: <span id="score-display">0</span></span>
                 <span class="lvl-stat">SOAL: <span id="q-counter">1/10</span></span>
-                <span class="timer-stat">ATTEMPTS: <span id="attempt-display">0/5</span></span>
+                <span class="timer-stat">WAKTU: <span id="timer-display">60</span>s | GAGAL: <span id="attempt-display">0/5</span></span>
             </div>
             
             <div style="display: flex; justify-content: space-between; width: 80%; align-items: center; margin-bottom: 10px;">
@@ -237,7 +305,6 @@
             <div id="code-editor" style="overflow-y: auto; max-height: 350px;"></div>
         </div>
 
-        <!-- FRAME 05: POP-UP ERROR IDENTIFICATION -->
         <div id="overlay-popup" class="overlay">
             <div class="popup-box">
                 <h2 class="popup-title">BUG DITEMUKAN!</h2>
@@ -248,7 +315,6 @@
             </div>
         </div>
 
-        <!-- FRAME 06: CODE REVIEW -->
         <div id="frame-06" class="frame">
             <h2>PEMBAHASAN KODE</h2>
             <h3 style="margin-top: -10px; color: #3fb950;">SKOR SAAT INI: <span id="review-score">0</span></h3>
@@ -269,7 +335,6 @@
             <button id="btn-finish-q" style="display:none; background-color:#e3b341; color:#000;" onclick="playSFX(); showAppreciation()">SELESAIKAN MISI</button>
         </div>
 
-        <!-- FRAME 07: APRESIASI (AKHIR GAME) -->
         <div id="frame-apresiasi" class="frame">
             <h1 style="font-size: 3em; color: #3fb950; margin-bottom: 0;">MISI SELESAI</h1>
             <p class="subtitle">Sistem telah dievaluasi.</p>
@@ -280,11 +345,21 @@
                 <p style="color: #c9d1d9; font-size: 18px;">TOTAL SKOR: <b id="final-score" style="color: #3fb950; font-size: 24px;">1000</b></p>
             </div>
 
-            <button class="action-btn" onclick="playSFX(); resetGameToDashboard()">KEMBALI KE DASHBOARD</button>
+            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
+                <button class="action-btn" style="background-color: #58a6ff;" onclick="playSFX(); downloadCertificate()">UNDUH SERTIFIKAT</button>
+                <button class="action-btn" onclick="playSFX(); resetGameToDashboard()">KEMBALI KE DASHBOARD</button>
+            </div>
         </div>
 
     </div>
 
-    <script src="script.js"></script>
+    <div id="toast-container"></div>
+
+    <script src="ui.js"></script>
+    <script src="auth.js"></script>
+    <script src="admin.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
 </body>
 </html>
