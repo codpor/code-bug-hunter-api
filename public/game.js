@@ -11,7 +11,7 @@ async function recordStudentHistory(isCorrect) {
     if (!currentQ || !currentQ.id) return;
 
     try {
-        await fetch('http://localhost:3000/api/save-history', {
+        await fetch('/api/save-history', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -26,7 +26,7 @@ async function recordStudentHistory(isCorrect) {
 
 async function fetchQuestionsAndStart() {
     try {
-        const res = await fetch(`http://localhost:3000/api/questions?lang=${selectedLang}&level=${selectedLevel}`);
+        const res = await fetch(`/api/questions?lang=${selectedLang}&level=${selectedLevel}`);
         const data = await res.json();
         if(data.length === 0) { showToast("Soal belum tersedia."); return; }
         questionsList = data; currentQIndex = 0; hp = 3; score = 0;
@@ -179,7 +179,7 @@ async function showAppreciation() {
     document.getElementById('badge-title').innerText = badge; document.getElementById('badge-icon').innerText = icon;
     if(currentUser.id && currentUser.role !== 'guru') {
         try {
-            await fetch('http://localhost:3000/api/save-score', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: currentUser.id, score: score, badge: badge }) });
+            await fetch('/api/save-score', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: currentUser.id, score: score, badge: badge }) });
         } catch(e) {}
     }
 }
@@ -210,7 +210,7 @@ function resetGameToDashboard() {
 
 async function loadLeaderboard() {
     try {
-        const res = await fetch('http://localhost:3000/api/leaderboard');
+        const res = await fetch('/api/leaderboard');
         const data = await res.json();
         const tbody = document.getElementById('leaderboard-body'); tbody.innerHTML = '';
         data.forEach((row, index) => {
@@ -228,7 +228,7 @@ async function showStudentStats() {
         const lang = document.getElementById('rapor-lang') ? document.getElementById('rapor-lang').value : '';
         const lvl = document.getElementById('rapor-lvl') ? document.getElementById('rapor-lvl').value : '';
         
-        let url = `http://localhost:3000/api/student/stats/${currentUser.id}`;
+        let url = `/api/student/stats/${currentUser.id}`;
         if (lang || lvl) url += `?lang=${lang}&level=${lvl}`;
 
         const res = await fetch(url);
