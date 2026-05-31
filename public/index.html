@@ -246,9 +246,13 @@
 
         <div id="frame-leaderboard" class="frame">
             <h2 style="color: #e3b341;">TOP 10 BUG HUNTERS</h2>
+            <input type="text" id="search-leaderboard" class="terminal-input" placeholder="🔍 Cari nama hunter..." style="width: 80%; margin-bottom: 15px; padding: 10px;" onkeyup="searchLeaderboard()">
+            
             <div style="width: 80%; max-height: 60%; overflow-y: auto; background: #0d1117; border: 1px solid #30363d; border-radius: 5px; margin-bottom: 20px;">
                 <table class="leaderboard-table" style="width: 100%; margin: 0;">
-                    <thead style="position: sticky; top: 0;"><tr><th>No</th><th>Username</th><th>Skor</th><th>Badge</th></tr></thead>
+                    <thead style="position: sticky; top: 0; background-color: #21262d; z-index: 1;">
+                        <tr><th>No</th><th>Username</th><th>Skor</th><th>Badge</th></tr>
+                    </thead>
                     <tbody id="leaderboard-body"></tbody>
                 </table>
             </div>

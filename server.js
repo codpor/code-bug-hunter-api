@@ -98,12 +98,20 @@ app.post('/api/save-score', (req, res) => {
     });
 });
 
-app.post('/api/save-history', (req, res) => {
-    const { user_id, question_id, is_correct, attempts_used } = req.body;
-    const sql = 'INSERT INTO student_history (user_id, question_id, is_correct, attempts_used) VALUES (?, ?, ?, ?)';
-    db.query(sql, [user_id, question_id, is_correct, attempts_used], (err, result) => {
-        if (err) return res.status(500).json({ message: 'Gagal menyimpan riwayat' });
-        res.status(201).json({ message: 'Riwayat tersimpan' });
+app.get('/api/leaderboard', (req, res) => {
+    // Menggunakan fungsi ROW_NUMBER() untuk mengambil skor tertinggi tiap user
+    const sql = `
+        SELECT username, total_score, badge_title FROM (
+            SELECT u.username, l.total_score, l.badge_title,
+                   ROW_NUMBER() OVER(PARTITION BY u.id ORDER BY l.total_score DESC, l.id DESC) as rn
+            FROM leaderboard l
+            JOIN users u ON l.user_id = u.id
+        ) t WHERE rn = 1
+        ORDER BY total_score DESC
+    `;
+    db.query(sql, (err, results) => {
+        if (err) return res.status(500).json({ message: 'Database error' });
+        res.status(200).json(results);
     });
 });
 

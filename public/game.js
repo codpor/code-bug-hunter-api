@@ -4,6 +4,7 @@ let selectedLang = ''; let selectedLevel = '';
 let questionsList = []; let currentQIndex = 0;
 let hp = 3; let score = 0; let attempts = 0; let hintUsed = false;
 let timerInterval; let timeLeft = 60;
+let globalLeaderboardData = [];
 
 async function recordStudentHistory(isCorrect) {
     if (!currentUser.id || currentUser.role !== 'siswa') return;
@@ -211,15 +212,93 @@ function resetGameToDashboard() {
 async function loadLeaderboard() {
     try {
         const res = await fetch('/api/leaderboard');
-        const data = await res.json();
-        const tbody = document.getElementById('leaderboard-body'); tbody.innerHTML = '';
-        data.forEach((row, index) => {
-            let tr = document.createElement('tr');
-            tr.innerHTML = `<td>${index+1}</td><td>${row.username}</td><td>${row.total_score}</td><td>${row.badge_title}</td>`;
-            tbody.appendChild(tr);
-        });
+        globalLeaderboardData = await res.json();
+        
+        // Reset kolom search saat menu dibuka
+        const searchInput = document.getElementById('search-leaderboard');
+        if(searchInput) searchInput.value = '';
+
+        renderLeaderboardTable(globalLeaderboardData);
         goToFrame('frame-leaderboard');
     } catch (e) { showToast("Gagal memuat leaderboard", "error"); }
+}
+
+function renderLeaderboardTable(data, isSearching = false) {
+    const tbody = document.getElementById('leaderboard-body'); 
+    tbody.innerHTML = '';
+    
+    if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#8b949e;">Belum ada data.</td></tr>';
+        return;
+    }
+
+    data.forEach((row, index) => {
+        // Tambahkan garis pemisah SETELAH urutan ke-10 (hanya jika tidak sedang mencari nama)
+        if (!isSearching && index === 10) {
+            let divider = document.createElement('tr');
+            divider.innerHTML = `<td colspan="4" style="text-align: center; color: #8b949e; background: #21262d; font-size: 12px; letter-spacing: 2px;">--- PERINGKAT 11 DAN SETERUSNYA ---</td>`;
+            tbody.appendChild(divider);
+        }
+
+        let tr = document.createElement('tr');
+        
+        // Beri warna khusus (Gold, Silver, Bronze) untuk Top 3
+        let rankColor = index < 3 ? '#e3b341' : (index < 10 ? '#3fb950' : '#c9d1d9');
+        
+        // Jika sedang mode pencarian, highlight barisnya dengan warna biru
+        if (isSearching) {
+            tr.style.background = 'rgba(88, 166, 255, 0.1)';
+            rankColor = '#58a6ff';
+        }
+
+        tr.innerHTML = `
+            <td style="color: ${rankColor}; font-weight: bold;">${index + 1}</td>
+            <td style="color: ${isSearching ? '#58a6ff' : ''}; font-weight: ${isSearching ? 'bold' : 'normal'};">${row.username}</td>
+            <td>${row.total_score}</td>
+            <td>${row.badge_title}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function searchLeaderboard() {
+    const keyword = document.getElementById('search-leaderboard').value.toLowerCase();
+    
+    if (keyword === "") {
+        // Jika kolom pencarian kosong, kembalikan tampilan normal (dengan pemisah Top 10)
+        renderLeaderboardTable(globalLeaderboardData, false);
+        return;
+    }
+    
+    const searchedData = [];
+    globalLeaderboardData.forEach((row, index) => {
+        if (row.username.toLowerCase().includes(keyword)) {
+            searchedData.push(row);
+        }
+    });
+
+    const tbody = document.getElementById('leaderboard-body');
+    tbody.innerHTML = '';
+    
+    if (searchedData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#f85149;">Pemain tidak ditemukan.</td></tr>';
+        return;
+    }
+
+    // Tampilkan hasil pencarian menggunakan data global agar nomor urutnya (index) tetap akurat
+    globalLeaderboardData.forEach((row, index) => {
+        if (row.username.toLowerCase().includes(keyword)) {
+            let tr = document.createElement('tr');
+            tr.style.background = 'rgba(88, 166, 255, 0.2)'; // Efek highlight
+            tr.innerHTML = `
+                <td style="color: #58a6ff; font-weight: bold;">${index + 1}</td>
+                <td style="color: #58a6ff; font-weight: bold;">${row.username}</td>
+                <td>${row.total_score}</td>
+                <td>${row.badge_title}</td>
+            `;
+            tbody.appendChild(tr);
+        }
+    });
 }
 
 async function showStudentStats() {
