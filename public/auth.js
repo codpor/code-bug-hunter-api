@@ -51,6 +51,28 @@ async function simulateLogin() {
     } catch (e) { showToast("Server error. Pastikan Node.js menyala.", "error"); }
 }
 
+async function simulateRegister() {
+    playSFX();
+    const user = document.getElementById('reg-user').value;
+    const email = document.getElementById('reg-email').value;
+    const pass = document.getElementById('reg-pass').value;
+    const role = document.getElementById('reg-role').value;
+    try {
+        const res = await fetch('/api/register', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: user, email: email, password: pass, role: role })
+        });
+        const data = await res.json();
+        if (res.ok) { 
+            showToast(data.message); 
+            document.getElementById('register-form').reset(); 
+            goToFrame('frame-login'); 
+        } else { 
+            showToast("Gagal: " + data.message, "error"); 
+        }
+    } catch (e) { showToast("Server error.", "error"); }
+}
+
 // Cek status login saat halaman pertama dimuat
 window.onload = function() {
     const storedUser = localStorage.getItem('user');

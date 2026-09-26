@@ -160,6 +160,8 @@ async function checkErrorType(answerType) {
             document.getElementById('review-explanation').innerText = data.explanation;
             
             if (window.Prism) {
+                document.getElementById('review-wrong').className = `language-${selectedLang}`;
+                document.getElementById('review-right').className = `language-${selectedLang}`;
                 Prism.highlightElement(document.getElementById('review-wrong'));
                 Prism.highlightElement(document.getElementById('review-right'));
             }
