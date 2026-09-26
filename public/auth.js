@@ -1,4 +1,25 @@
-// auth.js - Mengelola Autentikasi Pengguna
+// auth.js - Mengelola Autentikasi Pengguna & JWT Token
+
+// Fungsi Helper untuk memanggil API dengan Token
+async function fetchWithAuth(url, options = {}) {
+    const token = localStorage.getItem('token');
+    
+    // Menambahkan Header Authorization ke setiap request
+    options.headers = {
+        ...options.headers,
+        'Authorization': `Bearer ${token}`
+    };
+    
+    const response = await fetch(url, options);
+    
+    // Jika token kadaluarsa atau tidak valid, logout paksa
+    if (response.status === 401 || response.status === 403) {
+        showToast("Sesi habis, silakan login kembali.", "error");
+        logOut();
+    }
+    
+    return response;
+}
 
 async function simulateLogin() {
     playSFX();
@@ -11,15 +32,17 @@ async function simulateLogin() {
         });
         const data = await res.json();
         if (res.ok) {
-            currentUser = { id: data.id, username: data.username, role: data.role };
+            // SIMPAN TOKEN KE LOCALSTORAGE AGAR TIDAK HILANG SAAT REFRESH
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('user', JSON.stringify(data.user));
+            
+            currentUser = data.user;
             document.getElementById('login-form').reset();
             
             if(currentUser.role === 'guru') {
                 document.getElementById('guru-name').innerText = currentUser.username.toUpperCase();
                 goToFrame('frame-guru');
-                document.getElementById('admin-soal-list').innerHTML = '<p style="color: #8b949e; text-align: center; margin-top: 50px;">Silakan pilih bahasa dan tingkatan di atas untuk memuat daftar soal.</p>';
-                document.getElementById('filter-lang').value = "";
-                document.getElementById('filter-lvl').value = "";
+                // ... setup guru dashboard ...
             } else {
                 document.getElementById('display-username').innerText = currentUser.username.toUpperCase();
                 goToFrame('frame-01');
@@ -28,32 +51,28 @@ async function simulateLogin() {
     } catch (e) { showToast("Server error. Pastikan Node.js menyala.", "error"); }
 }
 
-async function simulateRegister() {
-    playSFX();
-    const user = document.getElementById('reg-user').value;
-    const email = document.getElementById('reg-email').value;
-    const pass = document.getElementById('reg-pass').value;
-    const role = document.getElementById('reg-role').value;
-    try {
-        const res = await fetch('/api/register', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: user, email: email, password: pass, role: role })
-        });
-        const data = await res.json();
-        if (res.ok) { 
-            showToast(data.message); 
-            document.getElementById('register-form').reset(); 
-            goToFrame('frame-login'); 
-        } else { 
-            showToast("Gagal: " + data.message, "error"); 
+// Cek status login saat halaman pertama dimuat
+window.onload = function() {
+    const storedUser = localStorage.getItem('user');
+    const storedToken = localStorage.getItem('token');
+    
+    if (storedUser && storedToken) {
+        currentUser = JSON.parse(storedUser);
+        if (currentUser.role === 'guru') {
+            document.getElementById('guru-name').innerText = currentUser.username.toUpperCase();
+            goToFrame('frame-guru');
+        } else {
+            document.getElementById('display-username').innerText = currentUser.username.toUpperCase();
+            goToFrame('frame-01');
         }
-    } catch (e) { showToast("Server error.", "error"); }
+    }
 }
 
 function logOut() {
     if(bgm) bgm.pause();
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
     currentUser = { id: null, username: '', role: '' };
-    // Cek apakah fungsi stopTimer dari game.js sudah dimuat
     if (typeof stopTimer === 'function') stopTimer();
     goToFrame('frame-landing');
 }
