@@ -12,12 +12,14 @@ const JWT_SECRET = process.env.JWT_SECRET || 'super_rahasia_hunter_123';
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, '../public')));
+app.use(express.static(path.join(__dirname, 'public')));
 
-// FIX Vercel URL stripping: jika Vercel menghapus '/api', tambahkan kembali agar route di bawah cocok!
+// FIX Vercel URL stripping: Gunakan parameter query dari vercel.json
 app.use((req, res, next) => {
-    if (!req.url.startsWith('/api')) {
-        req.url = '/api' + req.url;
+    if (req.query.api_route) {
+        // Hapus query parameter dari URL agar tidak mengganggu route regex Express
+        req.url = '/api/' + req.query.api_route;
+        delete req.query.api_route;
     }
     next();
 });
