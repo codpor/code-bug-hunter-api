@@ -1,22 +1,23 @@
 -- ========================================================
--- CODE BUG HUNTER - DATABASE SCHEMA (TiDB / MySQL)
+-- CODE BUG HUNTER PRO - DATABASE SCHEMA (TiDB / MySQL)
+-- ROLE-BASED ACCESS CONTROL (RBAC) + SUPER ADMIN SUPPORT
 -- ========================================================
 
 CREATE DATABASE IF NOT EXISTS code_bug_hunter;
 USE code_bug_hunter;
 
--- 1. Tabel Users
+-- 1. Tabel Users (Mendukung Siswa, Guru, dan Super Admin)
 CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
     email VARCHAR(100) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
-    role ENUM('siswa', 'guru') NOT NULL DEFAULT 'siswa',
+    role ENUM('siswa', 'guru', 'superadmin') NOT NULL DEFAULT 'siswa',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_user_role (role)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 2. Tabel Questions (Bank Soal)
+-- 2. Tabel Questions (Bank Soal Multi-Bahasa)
 CREATE TABLE IF NOT EXISTS questions (
     id INT AUTO_INCREMENT PRIMARY KEY,
     language VARCHAR(20) NOT NULL,

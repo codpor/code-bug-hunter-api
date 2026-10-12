@@ -40,13 +40,35 @@ const db = mysql.createPool({
     }
 });
 
-// Test connection pool
+// Auto-seed default Super Admin jika belum ada
+async function seedSuperAdmin() {
+    const checkSql = "SELECT id, role FROM users WHERE username = 'superadmin' OR role = 'superadmin' LIMIT 1";
+    db.query(checkSql, async (err, results) => {
+        if (!err && results.length === 0) {
+            try {
+                const defaultPass = 'AdminHunter#2026';
+                const hashedPassword = await bcrypt.hash(defaultPass, 10);
+                const insertSql = "INSERT INTO users (username, email, password, role) VALUES ('superadmin', 'admin@codebughunter.com', ?, 'superadmin')";
+                db.query(insertSql, [hashedPassword], (insertErr) => {
+                    if (!insertErr) {
+                        console.log("👑 Akun Default Super Admin berhasil diinisialisasi (username: superadmin, password: AdminHunter#2026)!");
+                    }
+                });
+            } catch (e) {
+                console.error("Gagal auto-seed superadmin:", e.message);
+            }
+        }
+    });
+}
+
+// Test connection pool & inisialisasi superadmin
 db.getConnection((err, conn) => {
     if (err) {
         console.error("⚠️ TiDB Database Connection Warning:", err.message);
     } else {
         console.log('✅ Terhubung ke Database MySQL/TiDB Code Bug Hunter via Connection Pool!');
         conn.release();
+        seedSuperAdmin();
     }
 });
 
@@ -63,6 +85,10 @@ const authenticateToken = (req, res, next) => {
         next();
     });
 };
+
+// Helper RBAC (Role-Based Access Control)
+const hasTeacherAccess = (role) => role === 'guru' || role === 'superadmin';
+const isSuperAdmin = (role) => role === 'superadmin';
 
 // Health Check Endpoint
 app.get('/api/health', (req, res) => {
@@ -87,7 +113,8 @@ app.post('/api/register', (req, res) => {
         
         try {
             const hashedPassword = await bcrypt.hash(password, 10);
-            const userRole = role === 'guru' ? 'guru' : 'siswa';
+            // Pendaftaran publik hanya boleh 'siswa' atau 'guru'. Superadmin hanya lewat admin atau seed.
+            const userRole = (role === 'guru') ? 'guru' : 'siswa';
             
             const insertQuery = 'INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)';
             db.query(insertQuery, [username.trim(), email.trim().toLowerCase(), hashedPassword, userRole], (err, result) => {
@@ -106,9 +133,9 @@ app.post('/api/login', (req, res) => {
         return res.status(400).json({ message: 'Username dan Password wajib diisi!' });
     }
 
-    const sql = 'SELECT * FROM users WHERE username = ? LIMIT 1';
+    const sql = 'SELECT * FROM users WHERE username = ? OR email = ? LIMIT 1';
     
-    db.query(sql, [username.trim()], async (err, results) => {
+    db.query(sql, [username.trim(), username.trim().toLowerCase()], async (err, results) => {
         if (err) return res.status(500).json({ message: 'Database error: ' + err.message });
         
         if (results.length > 0) {
@@ -166,12 +193,10 @@ app.post('/api/answer', authenticateToken, (req, res) => {
         const question = results[0];
         let isCorrectLine = (guessed_line === question.bug_index);
         
-        // Mode 1: Verifikasi baris klik
         if (guessed_error_type === null || guessed_error_type === undefined) {
             return res.status(200).json({ is_correct_line: isCorrectLine });
         }
 
-        // Mode 2: Verifikasi tipe error
         let isFullyCorrect = isCorrectLine && (guessed_error_type === question.error_type);
         let earnedPoints = 0;
         
@@ -216,13 +241,14 @@ app.post('/api/save-score', authenticateToken, (req, res) => {
 
 app.get('/api/leaderboard', (req, res) => {
     const sql = `
-        SELECT username, total_score, badge_title FROM (
-            SELECT u.username, l.total_score, l.badge_title,
-                   ROW_NUMBER() OVER(PARTITION BY u.id ORDER BY l.total_score DESC, l.id DESC) as rn
+        SELECT l.id, u.username, l.total_score, l.badge_title, l.created_at FROM (
+            SELECT l.id, l.user_id, l.total_score, l.badge_title, l.created_at,
+                   ROW_NUMBER() OVER(PARTITION BY l.user_id ORDER BY l.total_score DESC, l.id DESC) as rn
             FROM leaderboard l
-            JOIN users u ON l.user_id = u.id
-        ) t WHERE rn = 1
-        ORDER BY total_score DESC
+        ) l
+        JOIN users u ON l.user_id = u.id
+        WHERE l.rn = 1
+        ORDER BY l.total_score DESC
         LIMIT 10
     `;
     db.query(sql, (err, results) => {
@@ -231,9 +257,9 @@ app.get('/api/leaderboard', (req, res) => {
     });
 });
 
-// --- API CRUD GURU (MANAJEMEN SOAL) ---
+// --- API CRUD GURU & SUPER ADMIN (MANAJEMEN SOAL) ---
 app.get('/api/admin/questions', authenticateToken, (req, res) => {
-    if (req.user.role !== 'guru') return res.status(403).json({ message: 'Akses ditolak: Khusus akun Guru' });
+    if (!hasTeacherAccess(req.user.role)) return res.status(403).json({ message: 'Akses ditolak: Khusus akun Guru atau Super Admin' });
     const { lang, level } = req.query;
     let sql = 'SELECT * FROM questions';
     let params = [];
@@ -249,7 +275,7 @@ app.get('/api/admin/questions', authenticateToken, (req, res) => {
 });
 
 app.post('/api/admin/questions', authenticateToken, (req, res) => {
-    if (req.user.role !== 'guru') return res.status(403).json({ message: 'Akses ditolak: Khusus akun Guru' });
+    if (!hasTeacherAccess(req.user.role)) return res.status(403).json({ message: 'Akses ditolak: Khusus akun Guru atau Super Admin' });
     const { language, level, code_lines, bug_index, error_type, wrong_snippet, right_snippet, explanation, hint_text, created_by } = req.body;
     
     if (!language || !level || !error_type || !code_lines || code_lines.length === 0) {
@@ -270,7 +296,7 @@ app.post('/api/admin/questions', authenticateToken, (req, res) => {
 });
 
 app.put('/api/admin/questions/:id', authenticateToken, (req, res) => {
-    if (req.user.role !== 'guru') return res.status(403).json({ message: 'Akses ditolak: Khusus akun Guru' });
+    if (!hasTeacherAccess(req.user.role)) return res.status(403).json({ message: 'Akses ditolak: Khusus akun Guru atau Super Admin' });
     const { id } = req.params;
     const { language, level, code_lines, bug_index, error_type, wrong_snippet, right_snippet, explanation, hint_text } = req.body;
     
@@ -292,7 +318,7 @@ app.put('/api/admin/questions/:id', authenticateToken, (req, res) => {
 });
 
 app.delete('/api/admin/questions/:id', authenticateToken, (req, res) => {
-    if (req.user.role !== 'guru') return res.status(403).json({ message: 'Akses ditolak: Khusus akun Guru' });
+    if (!hasTeacherAccess(req.user.role)) return res.status(403).json({ message: 'Akses ditolak: Khusus akun Guru atau Super Admin' });
     const { id } = req.params;
     const sql = 'DELETE FROM questions WHERE id=?';
     db.query(sql, [id], (err) => {
@@ -302,7 +328,7 @@ app.delete('/api/admin/questions/:id', authenticateToken, (req, res) => {
 });
 
 app.post('/api/admin/questions/bulk', authenticateToken, (req, res) => {
-    if (req.user.role !== 'guru') return res.status(403).json({ message: 'Akses ditolak: Khusus akun Guru' });
+    if (!hasTeacherAccess(req.user.role)) return res.status(403).json({ message: 'Akses ditolak: Khusus akun Guru atau Super Admin' });
     const questions = req.body;
     if (!Array.isArray(questions) || questions.length === 0) return res.status(400).json({ message: 'Data format array tidak valid!' });
     
@@ -347,7 +373,7 @@ app.get('/api/student/stats/:userId', authenticateToken, (req, res) => {
 
 // --- API ANALITIK EVALUASI GURU ---
 app.get('/api/admin/analytics', authenticateToken, (req, res) => {
-    if (req.user.role !== 'guru') return res.status(403).json({ message: 'Akses ditolak: Khusus akun Guru' });
+    if (!hasTeacherAccess(req.user.role)) return res.status(403).json({ message: 'Akses ditolak: Khusus akun Guru atau Super Admin' });
     const { lang, level } = req.query;
     let sql = `
         SELECT q.id, q.language, q.level, q.error_type, q.bug_index,
@@ -368,6 +394,144 @@ app.get('/api/admin/analytics', authenticateToken, (req, res) => {
     db.query(sql, params, (err, results) => {
         if (err) return res.status(500).json({ message: 'Database error: ' + err.message });
         res.status(200).json(results);
+    });
+});
+
+// ========================================================
+// --- API KHUSUS SUPER ADMIN (MANAJEMEN USER & SISTEM) ---
+// ========================================================
+
+// 1. Ambil Semua Daftar Pengguna
+app.get('/api/admin/users', authenticateToken, (req, res) => {
+    if (!isSuperAdmin(req.user.role)) {
+        return res.status(403).json({ message: 'Akses ditolak: Khusus Super Admin' });
+    }
+
+    const sql = 'SELECT id, username, email, role, created_at FROM users ORDER BY id DESC';
+    db.query(sql, (err, results) => {
+        if (err) return res.status(500).json({ message: 'Database error: ' + err.message });
+        res.status(200).json(results);
+    });
+});
+
+// 2. Ubah Role Pengguna
+app.put('/api/admin/users/:id/role', authenticateToken, (req, res) => {
+    if (!isSuperAdmin(req.user.role)) {
+        return res.status(403).json({ message: 'Akses ditolak: Khusus Super Admin' });
+    }
+
+    const { id } = req.params;
+    const { role } = req.body;
+    
+    const validRoles = ['siswa', 'guru', 'superadmin'];
+    if (!validRoles.includes(role)) {
+        return res.status(400).json({ message: 'Role tidak valid! Harus: siswa, guru, atau superadmin' });
+    }
+
+    if (parseInt(id) === req.user.id && role !== 'superadmin') {
+        return res.status(400).json({ message: 'Anda tidak dapat menurunkan role akun Anda sendiri!' });
+    }
+
+    const sql = 'UPDATE users SET role = ? WHERE id = ?';
+    db.query(sql, [role, id], (err, result) => {
+        if (err) return res.status(500).json({ message: 'Gagal mengubah role: ' + err.message });
+        res.status(200).json({ message: `Role pengguna berhasil diubah menjadi ${role}!` });
+    });
+});
+
+// 3. Reset Password Pengguna
+app.put('/api/admin/users/:id/password', authenticateToken, async (req, res) => {
+    if (!isSuperAdmin(req.user.role)) {
+        return res.status(403).json({ message: 'Akses ditolak: Khusus Super Admin' });
+    }
+
+    const { id } = req.params;
+    const { new_password } = req.body;
+
+    if (!new_password || new_password.trim().length < 5) {
+        return res.status(400).json({ message: 'Password baru minimal 5 karakter!' });
+    }
+
+    try {
+        const hashedPassword = await bcrypt.hash(new_password.trim(), 10);
+        const sql = 'UPDATE users SET password = ? WHERE id = ?';
+        db.query(sql, [hashedPassword, id], (err, result) => {
+            if (err) return res.status(500).json({ message: 'Gagal mereset password: ' + err.message });
+            res.status(200).json({ message: 'Password pengguna berhasil direset!' });
+        });
+    } catch (e) {
+        res.status(500).json({ message: 'Gagal mengenkripsi password baru' });
+    }
+});
+
+// 4. Hapus Pengguna
+app.delete('/api/admin/users/:id', authenticateToken, (req, res) => {
+    if (!isSuperAdmin(req.user.role)) {
+        return res.status(403).json({ message: 'Akses ditolak: Khusus Super Admin' });
+    }
+
+    const { id } = req.params;
+    if (parseInt(id) === req.user.id) {
+        return res.status(400).json({ message: 'Anda tidak dapat menghapus akun Anda sendiri yang sedang aktif!' });
+    }
+
+    const sql = 'DELETE FROM users WHERE id = ?';
+    db.query(sql, [id], (err, result) => {
+        if (err) return res.status(500).json({ message: 'Gagal menghapus pengguna: ' + err.message });
+        res.status(200).json({ message: 'Pengguna berhasil dihapus dari sistem!' });
+    });
+});
+
+// 5. Statistik Global Sistem (Dashboard Summary)
+app.get('/api/admin/system-stats', authenticateToken, (req, res) => {
+    if (!isSuperAdmin(req.user.role)) {
+        return res.status(403).json({ message: 'Akses ditolak: Khusus Super Admin' });
+    }
+
+    const sqlUsers = "SELECT COUNT(*) as total, SUM(role = 'siswa') as total_siswa, SUM(role = 'guru') as total_guru, SUM(role = 'superadmin') as total_admin FROM users";
+    const sqlQuestions = "SELECT COUNT(*) as total_questions FROM questions";
+    const sqlHistory = "SELECT COUNT(*) as total_attempts, COALESCE(SUM(is_correct), 0) as total_correct FROM student_history";
+    const sqlLeaderboard = "SELECT COUNT(*) as total_ranks FROM leaderboard";
+
+    db.query(sqlUsers, (err1, rUsers) => {
+        if (err1) return res.status(500).json({ message: 'Database error' });
+        db.query(sqlQuestions, (err2, rQuestions) => {
+            if (err2) return res.status(500).json({ message: 'Database error' });
+            db.query(sqlHistory, (err3, rHistory) => {
+                if (err3) return res.status(500).json({ message: 'Database error' });
+                db.query(sqlLeaderboard, (err4, rLeaderboard) => {
+                    const u = rUsers[0] || {};
+                    const q = rQuestions[0] || {};
+                    const h = rHistory[0] || {};
+                    const l = rLeaderboard[0] || {};
+
+                    res.status(200).json({
+                        total_users: u.total || 0,
+                        total_siswa: u.total_siswa || 0,
+                        total_guru: u.total_guru || 0,
+                        total_admin: u.total_admin || 0,
+                        total_questions: q.total_questions || 0,
+                        total_attempts: h.total_attempts || 0,
+                        total_correct: h.total_correct || 0,
+                        total_ranks: l.total_ranks || 0
+                    });
+                });
+            });
+        });
+    });
+});
+
+// 6. Moderasi Leaderboard (Hapus Skor Curang)
+app.delete('/api/admin/leaderboard/:id', authenticateToken, (req, res) => {
+    if (!isSuperAdmin(req.user.role)) {
+        return res.status(403).json({ message: 'Akses ditolak: Khusus Super Admin' });
+    }
+
+    const { id } = req.params;
+    const sql = 'DELETE FROM leaderboard WHERE id = ?';
+    db.query(sql, [id], (err, result) => {
+        if (err) return res.status(500).json({ message: 'Gagal menghapus entri leaderboard: ' + err.message });
+        res.status(200).json({ message: 'Entri leaderboard berhasil dihapus!' });
     });
 });
 

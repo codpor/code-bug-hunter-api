@@ -14,6 +14,15 @@ async function fetchWithAuth(url, options = {}) {
         
         // Jika token kadaluarsa atau tidak valid, logout paksa
         if (response.status === 401 || response.status === 403) {
+            // Khusus pesan izin superadmin, tampilkan pesan tanpa langsung logout jika hanya masalah role
+            if (response.status === 403) {
+                const data = await response.clone().json().catch(() => ({}));
+                if (data.message && data.message.includes('Akses ditolak')) {
+                    showToast(data.message, "error");
+                    return response;
+                }
+            }
+
             showToast("Sesi Anda telah berakhir. Silakan login kembali.", "error");
             logOut();
             return response;
@@ -66,11 +75,20 @@ async function simulateLogin() {
                 bgm.play().catch(() => {});
             }
             
-            if (currentUser.role === 'guru') {
+            if (currentUser.role === 'guru' || currentUser.role === 'superadmin') {
                 const guruNameEl = document.getElementById('guru-name');
-                if (guruNameEl) guruNameEl.innerText = currentUser.username.toUpperCase();
+                if (guruNameEl) {
+                    const badgeIcon = currentUser.role === 'superadmin' ? '👑 SUPER ADMIN' : '👨‍🏫 GURU';
+                    guruNameEl.innerText = `${currentUser.username.toUpperCase()} (${badgeIcon})`;
+                }
                 goToFrame('frame-guru');
-                // Auto fetch default if filters have values
+                
+                // Tampilkan tab superadmin jika role superadmin
+                if (typeof setupAdminTabs === 'function') {
+                    setupAdminTabs();
+                }
+
+                // Auto fetch default questions if filters selected
                 const filterLang = document.getElementById('filter-lang');
                 const filterLvl = document.getElementById('filter-lvl');
                 if (filterLang && filterLvl && filterLang.value && filterLvl.value) {
@@ -152,10 +170,16 @@ window.addEventListener('load', () => {
         try {
             currentUser = JSON.parse(storedUser);
             if (currentUser && currentUser.id) {
-                if (currentUser.role === 'guru') {
+                if (currentUser.role === 'guru' || currentUser.role === 'superadmin') {
                     const guruNameEl = document.getElementById('guru-name');
-                    if (guruNameEl) guruNameEl.innerText = currentUser.username.toUpperCase();
+                    if (guruNameEl) {
+                        const badgeIcon = currentUser.role === 'superadmin' ? '👑 SUPER ADMIN' : '👨‍🏫 GURU';
+                        guruNameEl.innerText = `${currentUser.username.toUpperCase()} (${badgeIcon})`;
+                    }
                     goToFrame('frame-guru');
+                    if (typeof setupAdminTabs === 'function') {
+                        setupAdminTabs();
+                    }
                 } else {
                     const dispUserEl = document.getElementById('display-username');
                     if (dispUserEl) dispUserEl.innerText = currentUser.username.toUpperCase();

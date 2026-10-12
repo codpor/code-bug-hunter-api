@@ -1,4 +1,43 @@
-// admin.js - Mengelola Fitur Dashboard Guru & CRUD Soal dengan Autentikasi JWT
+// admin.js - Mengelola Fitur Dashboard Guru & Super Admin (CRUD Soal, Manajemen User, & Sistem)
+
+let globalUsersData = [];
+
+// Setup Tabs Navigasi Admin / Super Admin
+function setupAdminTabs() {
+    const isSuper = (currentUser.role === 'superadmin');
+    
+    // Tampilkan tombol tab super admin jika rolenya superadmin
+    const userTabBtn = document.getElementById('btn-tab-users');
+    const systemTabBtn = document.getElementById('btn-tab-system');
+    
+    if (userTabBtn) userTabBtn.style.display = isSuper ? 'inline-flex' : 'none';
+    if (systemTabBtn) systemTabBtn.style.display = isSuper ? 'inline-flex' : 'none';
+
+    // Secara default buka tab soal jika belum ada tab aktif
+    switchAdminTab('soal');
+}
+
+function switchAdminTab(tabName) {
+    playSFX();
+    document.querySelectorAll('.admin-tab-pane').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('.admin-nav-tab').forEach(el => el.classList.remove('active'));
+
+    const tabBtn = document.getElementById(`btn-tab-${tabName}`);
+    const tabPane = document.getElementById(`pane-admin-${tabName}`);
+
+    if (tabBtn) tabBtn.classList.add('active');
+    if (tabPane) tabPane.style.display = 'block';
+
+    if (tabName === 'users') {
+        fetchUsersList();
+    } else if (tabName === 'system') {
+        fetchSystemStats();
+    }
+}
+
+// ========================================================
+// --- MANAJEMEN SOAL (GURU & SUPER ADMIN) ---
+// ========================================================
 
 async function fetchAdminQuestions() {
     const lang = document.getElementById('filter-lang').value;
@@ -337,5 +376,184 @@ async function fetchTeacherAnalytics() {
         document.getElementById('overlay-analytics').style.display = 'flex';
     } catch(e) { 
         showToast("Gagal memuat analitik: " + e.message, "error"); 
+    }
+}
+
+// ========================================================
+// --- KHUSUS SUPER ADMIN: MANAJEMEN PENGGUNA ---
+// ========================================================
+
+async function fetchUsersList() {
+    const tbody = document.getElementById('users-table-body');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 30px; color:#58a6ff;">Memuat daftar seluruh pengguna...</td></tr>';
+
+    try {
+        const res = await fetchWithAuth('/api/admin/users');
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            showToast(err.message || "Gagal memuat daftar pengguna", "error");
+            return;
+        }
+
+        globalUsersData = await res.json();
+        renderUsersTable(globalUsersData);
+    } catch (e) {
+        showToast("Error sistem saat mengambil data pengguna.", "error");
+    }
+}
+
+function renderUsersTable(users) {
+    const tbody = document.getElementById('users-table-body');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    if (!users || users.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#8b949e; padding: 25px;">Tidak ada pengguna ditemukan.</td></tr>';
+        return;
+    }
+
+    users.forEach(u => {
+        let tr = document.createElement('tr');
+        
+        const isSelf = (u.id === currentUser.id);
+        const dateStr = u.created_at ? new Date(u.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
+        
+        let roleBadgeClass = 'role-badge-siswa';
+        let roleIcon = '👤';
+        if (u.role === 'guru') { roleBadgeClass = 'role-badge-guru'; roleIcon = '👨‍🏫'; }
+        else if (u.role === 'superadmin') { roleBadgeClass = 'role-badge-superadmin'; roleIcon = '👑'; }
+
+        tr.innerHTML = `
+            <td style="font-family: monospace; color: #58a6ff; font-weight: bold;">#${u.id}</td>
+            <td style="font-weight: 600;">
+                ${u.username}
+                ${isSelf ? '<span class="you-pill">AKUN ANDA</span>' : ''}
+            </td>
+            <td style="color: #94a3b8; font-size: 13px;">${u.email}</td>
+            <td>
+                <span class="role-badge-item ${roleBadgeClass}">${roleIcon} ${u.role.toUpperCase()}</span>
+            </td>
+            <td style="font-size: 12px; color: #64748b;">${dateStr}</td>
+            <td>
+                <div class="user-action-group">
+                    <button class="btn-user-action btn-change-role" onclick="playSFX(); promptChangeRole(${u.id}, '${u.username}', '${u.role}')" title="Ubah Peran">
+                        ⚡ Peran
+                    </button>
+                    <button class="btn-user-action btn-reset-pwd" onclick="playSFX(); promptResetPassword(${u.id}, '${u.username}')" title="Reset Password">
+                        🔑 Password
+                    </button>
+                    ${!isSelf ? `
+                    <button class="btn-user-action btn-delete-user" onclick="playSFX(); deleteUser(${u.id}, '${u.username}')" title="Hapus Akun">
+                        🗑️ Hapus
+                    </button>` : ''}
+                </div>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function searchUsersList() {
+    const keyword = (document.getElementById('search-users-input').value || '').trim().toLowerCase();
+    if (!keyword) {
+        renderUsersTable(globalUsersData);
+        return;
+    }
+    const filtered = globalUsersData.filter(u => 
+        u.username.toLowerCase().includes(keyword) || 
+        u.email.toLowerCase().includes(keyword) || 
+        u.role.toLowerCase().includes(keyword)
+    );
+    renderUsersTable(filtered);
+}
+
+async function promptChangeRole(userId, username, currentRole) {
+    const roles = ['siswa', 'guru', 'superadmin'];
+    const newRole = prompt(`Pilih Peran Baru untuk "${username}":\nPilihan: siswa / guru / superadmin`, currentRole);
+    
+    if (!newRole || !roles.includes(newRole.toLowerCase().trim())) {
+        if (newRole !== null) showToast("Peran yang dimasukkan tidak valid!", "warning");
+        return;
+    }
+
+    try {
+        const res = await fetchWithAuth(`/api/admin/users/${userId}/role`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ role: newRole.toLowerCase().trim() })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            showToast(data.message, "success");
+            fetchUsersList();
+        } else {
+            showToast(data.message || "Gagal mengubah role", "error");
+        }
+    } catch(e) {
+        showToast("Error sistem saat mengubah role.", "error");
+    }
+}
+
+async function promptResetPassword(userId, username) {
+    const newPassword = prompt(`Masukkan Password Baru untuk "${username}" (minimal 5 karakter):`);
+    if (!newPassword) return;
+
+    if (newPassword.trim().length < 5) {
+        showToast("Password minimal 5 karakter!", "warning");
+        return;
+    }
+
+    try {
+        const res = await fetchWithAuth(`/api/admin/users/${userId}/password`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ new_password: newPassword.trim() })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            showToast(`Password untuk ${username} berhasil diperbarui!`, "success");
+        } else {
+            showToast(data.message || "Gagal mereset password", "error");
+        }
+    } catch(e) {
+        showToast("Error sistem saat mereset password.", "error");
+    }
+}
+
+async function deleteUser(userId, username) {
+    if (confirm(`PERINGATAN: Apakah Anda yakin ingin menghapus akun "${username}" (ID: #${userId})?\nSemua riwayat dan data terkait akan terhapus!`)) {
+        try {
+            const res = await fetchWithAuth(`/api/admin/users/${userId}`, { method: 'DELETE' });
+            const data = await res.json();
+            if (res.ok) {
+                showToast(data.message, "success");
+                fetchUsersList();
+            } else {
+                showToast(data.message || "Gagal menghapus pengguna", "error");
+            }
+        } catch(e) {
+            showToast("Error sistem saat menghapus pengguna.", "error");
+        }
+    }
+}
+
+// ========================================================
+// --- KHUSUS SUPER ADMIN: STATISTIK SISTEM GLOBAL ---
+// ========================================================
+
+async function fetchSystemStats() {
+    try {
+        const res = await fetchWithAuth('/api/admin/system-stats');
+        if (!res.ok) return;
+        const stats = await res.json();
+
+        document.getElementById('sys-total-users').innerText = stats.total_users || 0;
+        document.getElementById('sys-total-siswa').innerText = stats.total_siswa || 0;
+        document.getElementById('sys-total-guru').innerText = stats.total_guru || 0;
+        document.getElementById('sys-total-admin').innerText = stats.total_admin || 0;
+        document.getElementById('sys-total-questions').innerText = stats.total_questions || 0;
+        document.getElementById('sys-total-attempts').innerText = (stats.total_attempts || 0).toLocaleString();
+    } catch (e) {
+        console.error("Gagal mengambil statistik sistem:", e);
     }
 }

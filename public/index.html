@@ -30,7 +30,7 @@
     <!-- Top Navigation Header -->
     <header id="main-header">
         <div class="header-container">
-            <div class="header-brand" onclick="goToFrame(currentUser.id ? (currentUser.role === 'guru' ? 'frame-guru' : 'frame-01') : 'frame-landing')">
+            <div class="header-brand" onclick="goToFrame(currentUser.id ? (currentUser.role === 'guru' || currentUser.role === 'superadmin' ? 'frame-guru' : 'frame-01') : 'frame-landing')">
                 <span class="brand-icon">⚡</span>
                 <span class="brand-text">CODE BUG HUNTER</span>
                 <span class="brand-badge">PRO v2.0</span>
@@ -108,7 +108,7 @@
                     <form id="login-form" class="auth-form" onsubmit="event.preventDefault(); simulateLogin();">
                         <div class="input-group">
                             <label for="login-user">Username</label>
-                            <input type="text" id="login-user" class="terminal-input" placeholder="Masukkan username" required autocomplete="username">
+                            <input type="text" id="login-user" class="terminal-input" placeholder="Username / Email" required autocomplete="username">
                         </div>
                         <div class="input-group">
                             <label for="login-pass">Password</label>
@@ -162,56 +162,149 @@
                 </div>
             </div>
 
-            <!-- 4. GURU DASHBOARD FRAME -->
+            <!-- 4. GURU & SUPER ADMIN DASHBOARD FRAME -->
             <div id="frame-guru" class="frame">
                 <div class="guru-header-bar">
                     <div>
-                        <h2 class="guru-title">PANEL EVALUATOR (GURU)</h2>
-                        <p class="guru-subtitle">Kelola bank soal pemrograman, import/export data, dan tinjau analitik kelas.</p>
+                        <h2 class="guru-title">PANEL PENGELOLA & EVALUATOR</h2>
+                        <p class="guru-subtitle">Kelola kurikulum bank soal, manajemen akun pengguna, dan tinjau analitik sistem.</p>
                     </div>
                     <div class="guru-profile-box">
-                        <span>Halo, <b id="guru-name" class="text-highlight">GURU</b></span>
+                        <span>Halo, <b id="guru-name" class="text-highlight">EVALUATOR</b></span>
                         <button class="secondary-btn btn-danger-soft btn-sm" onclick="playSFX(); logOut()">LOGOUT</button>
                     </div>
                 </div>
 
-                <!-- Action & Filter Bar -->
-                <div class="filter-toolbar">
-                    <div class="filter-group">
-                        <select id="filter-lang" class="terminal-input select-clean">
-                            <option value="" disabled selected>-- Pilih Bahasa --</option>
-                            <option value="python">Python</option>
-                            <option value="javascript">JavaScript</option>
-                            <option value="java">Java</option>
-                            <option value="php">PHP</option>
-                            <option value="cpp">C++</option>
-                            <option value="css">CSS</option>
-                        </select>
-                        <select id="filter-lvl" class="terminal-input select-clean">
-                            <option value="" disabled selected>-- Pilih Level --</option>
-                            <option value="mudah">Mudah</option>
-                            <option value="sedang">Sedang</option>
-                            <option value="sulit">Sulit</option>
-                        </select>
-                        <button class="action-btn btn-compact" onclick="playSFX(); fetchAdminQuestions()">🔍 TAMPILKAN</button>
+                <!-- Super Admin / Admin Tab Switcher -->
+                <div class="admin-tab-nav-bar mb-3">
+                    <button id="btn-tab-soal" class="admin-nav-tab active" onclick="switchAdminTab('soal')">
+                        💻 Bank Soal & Kurikulum
+                    </button>
+                    <button id="btn-tab-users" class="admin-nav-tab" onclick="switchAdminTab('users')" style="display: none;">
+                        👑 Manajemen Pengguna
+                    </button>
+                    <button id="btn-tab-system" class="admin-nav-tab" onclick="switchAdminTab('system')" style="display: none;">
+                        🛡️ Statistik Sistem & Moderasi
+                    </button>
+                </div>
+
+                <!-- PANE 1: BANK SOAL -->
+                <div id="pane-admin-soal" class="admin-tab-pane">
+                    <!-- Action & Filter Bar -->
+                    <div class="filter-toolbar">
+                        <div class="filter-group">
+                            <select id="filter-lang" class="terminal-input select-clean">
+                                <option value="" disabled selected>-- Pilih Bahasa --</option>
+                                <option value="python">Python</option>
+                                <option value="javascript">JavaScript</option>
+                                <option value="java">Java</option>
+                                <option value="php">PHP</option>
+                                <option value="cpp">C++</option>
+                                <option value="css">CSS</option>
+                            </select>
+                            <select id="filter-lvl" class="terminal-input select-clean">
+                                <option value="" disabled selected>-- Pilih Level --</option>
+                                <option value="mudah">Mudah</option>
+                                <option value="sedang">Sedang</option>
+                                <option value="sulit">Sulit</option>
+                            </select>
+                            <button class="action-btn btn-compact" onclick="playSFX(); fetchAdminQuestions()">🔍 TAMPILKAN</button>
+                        </div>
+
+                        <div class="toolbar-divider"></div>
+
+                        <div class="actions-group">
+                            <button class="action-btn btn-compact btn-blue" onclick="playSFX(); openSoalModal()">+ TAMBAH SOAL</button>
+                            <button class="action-btn btn-compact btn-gold" onclick="playSFX(); fetchTeacherAnalytics()">📊 ANALITIK KELAS</button>
+                            <button class="secondary-btn btn-compact" onclick="playSFX(); exportSoal()" title="Unduh File Backup JSON">⬇️ BACKUP</button>
+                            <button class="secondary-btn btn-compact" onclick="playSFX(); document.getElementById('import-file').click()" title="Unggah File Backup JSON">⬆️ RESTORE</button>
+                            <input type="file" id="import-file" style="display: none;" accept=".json" onchange="importSoal(event)">
+                        </div>
                     </div>
 
-                    <div class="toolbar-divider"></div>
-
-                    <div class="actions-group">
-                        <button class="action-btn btn-compact btn-blue" onclick="playSFX(); openSoalModal()">+ TAMBAH SOAL</button>
-                        <button class="action-btn btn-compact btn-gold" onclick="playSFX(); fetchTeacherAnalytics()">📊 ANALITIK KELAS</button>
-                        <button class="secondary-btn btn-compact" onclick="playSFX(); exportSoal()" title="Unduh File Backup JSON">⬇️ BACKUP</button>
-                        <button class="secondary-btn btn-compact" onclick="playSFX(); document.getElementById('import-file').click()" title="Unggah File Backup JSON">⬆️ RESTORE</button>
-                        <input type="file" id="import-file" style="display: none;" accept=".json" onchange="importSoal(event)">
+                    <!-- Soal Cards Container -->
+                    <div id="admin-soal-list" class="admin-soal-list">
+                        <div class="empty-placeholder">
+                            <div style="font-size: 40px; margin-bottom: 10px;">🔍</div>
+                            <p>Silakan pilih Bahasa dan Level di atas, lalu klik <b>Tampilkan</b> untuk memuat daftar soal.</p>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Soal Cards Container -->
-                <div id="admin-soal-list" class="admin-soal-list">
-                    <div class="empty-placeholder">
-                        <div style="font-size: 40px; margin-bottom: 10px;">🔍</div>
-                        <p>Silakan pilih Bahasa dan Level di atas, lalu klik <b>Tampilkan</b> untuk memuat daftar soal.</p>
+                <!-- PANE 2: MANAJEMEN PENGGUNA (SUPER ADMIN) -->
+                <div id="pane-admin-users" class="admin-tab-pane" style="display: none;">
+                    <div class="section-card text-left" style="max-width: 100%;">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h3 style="color: #e3b341; margin-bottom: 4px;">👑 KONTROL SEMUA PENGGUNA</h3>
+                                <p style="color: #94a3b8; font-size: 13px;">Kelola akun siswa, guru, dan admin, ubah role hak akses, atau reset password.</p>
+                            </div>
+                            <button class="action-btn btn-compact btn-blue" onclick="fetchUsersList()">🔄 REFRESH DATA</button>
+                        </div>
+
+                        <div class="search-box-wrapper mb-3">
+                            <input type="text" id="search-users-input" class="terminal-input search-input" placeholder="🔍 Cari berdasarkan username, email, atau role..." onkeyup="searchUsersList()">
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="leaderboard-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 70px;">ID</th>
+                                        <th>Username</th>
+                                        <th>Email</th>
+                                        <th>Peran (Role)</th>
+                                        <th>Tgl Terdaftar</th>
+                                        <th style="width: 220px;">Aksi Super Admin</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="users-table-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PANE 3: STATISTIK SISTEM GLOBAL (SUPER ADMIN) -->
+                <div id="pane-admin-system" class="admin-tab-pane" style="display: none;">
+                    <div class="section-card text-left" style="max-width: 100%;">
+                        <h3 style="color: #38bdf8; margin-bottom: 6px;">🛡️ RINGKASAN DATA & STATISTIK SISTEM</h3>
+                        <p style="color: #94a3b8; font-size: 13px; margin-bottom: 25px;">Metrik performa platform dan total aktivitas pengguna di TiDB Cloud.</p>
+
+                        <div class="stats-overview-grid mb-4">
+                            <div class="stat-card">
+                                <span class="stat-card-title">👥 Total Pengguna Terdaftar</span>
+                                <span id="sys-total-users" class="stat-card-value text-blue">0</span>
+                            </div>
+                            <div class="stat-card">
+                                <span class="stat-card-title">🎒 Siswa (Hunter)</span>
+                                <span id="sys-total-siswa" class="stat-card-value text-green">0</span>
+                            </div>
+                            <div class="stat-card">
+                                <span class="stat-card-title">👨‍🏫 Guru (Evaluator)</span>
+                                <span id="sys-total-guru" class="stat-card-value text-gold">0</span>
+                            </div>
+                            <div class="stat-card">
+                                <span class="stat-card-title">👑 Super Admin</span>
+                                <span id="sys-total-admin" class="stat-card-value text-gold">0</span>
+                            </div>
+                            <div class="stat-card">
+                                <span class="stat-card-title">📚 Total Soal di Bank Soal</span>
+                                <span id="sys-total-questions" class="stat-card-value text-blue">0</span>
+                            </div>
+                            <div class="stat-card">
+                                <span class="stat-card-title">🎯 Total Percobaan Jawaban</span>
+                                <span id="sys-total-attempts" class="stat-card-value text-green">0</span>
+                            </div>
+                        </div>
+
+                        <div style="background: rgba(15, 23, 42, 0.7); border: 1px dashed #334155; padding: 20px; border-radius: 10px;">
+                            <h4 style="color: #e2e8f0; margin-bottom: 8px;">ℹ️ Tips Keamanan Super Admin:</h4>
+                            <p style="color: #94a3b8; font-size: 13px; line-height: 1.6;">
+                                • Jangan membagikan kredensial Super Admin kepada siapapun.<br>
+                                • Anda dapat mereset password akun <b>superadmin</b> kapan saja melalui tab <i>Manajemen Pengguna</i>.<br>
+                                • Jika seorang siswa terindikasi bermain tidak wajar, Anda dapat menghapus entri skornya langsung dari menu Leaderboard atau mengubah akunnya.
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
