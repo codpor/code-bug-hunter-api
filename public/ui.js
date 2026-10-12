@@ -24,14 +24,14 @@ function updateAudioIcons() {
     const sfxBtn = document.getElementById('btn-toggle-sfx');
     if (bgmBtn) {
         bgmBtn.innerHTML = isBgmMuted 
-            ? '<span class="audio-indicator off"></span> <span class="audio-label">BGM Off</span>' 
-            : '<span class="audio-indicator on"></span> <span class="audio-label">BGM On</span>';
+            ? '🎵 <span class="audio-label">BGM Off</span>' 
+            : '🎵 <span class="audio-label">BGM</span>';
         bgmBtn.classList.toggle('muted', isBgmMuted);
     }
     if (sfxBtn) {
         sfxBtn.innerHTML = isSfxMuted 
-            ? '<span class="audio-indicator off"></span> <span class="audio-label">SFX Off</span>' 
-            : '<span class="audio-indicator on"></span> <span class="audio-label">SFX On</span>';
+            ? '🔈 <span class="audio-label">SFX Off</span>' 
+            : '🔊 <span class="audio-label">SFX</span>';
         sfxBtn.classList.toggle('muted', isSfxMuted);
     }
 }

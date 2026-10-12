@@ -12,18 +12,17 @@ async function fetchWithAuth(url, options = {}) {
     try {
         const response = await fetch(url, options);
         
-        // Jika token kadaluarsa atau tidak valid, logout paksa
-        if (response.status === 401 || response.status === 403) {
-            if (response.status === 403) {
-                const data = await response.clone().json().catch(() => ({}));
-                if (data.message && data.message.includes('Akses ditolak')) {
-                    showToast(data.message, "error");
-                    return response;
-                }
-            }
-
+        // Jika token tidak valid / kadaluarsa (401), logout paksa
+        if (response.status === 401) {
             showToast("Sesi Anda telah berakhir. Silakan login kembali.", "error");
             logOut();
+            return response;
+        }
+
+        // Jika hak akses tidak mencukupi (403), tampilkan notifikasi tanpa logout
+        if (response.status === 403) {
+            const data = await response.clone().json().catch(() => ({}));
+            showToast(data.message || "Akses ditolak: Anda tidak memiliki izin untuk tindakan ini.", "error");
             return response;
         }
         

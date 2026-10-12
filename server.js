@@ -40,27 +40,41 @@ const db = mysql.createPool({
     }
 });
 
-// Auto-seed default Super Admin jika belum ada
+// Auto-migrate schema & inisialisasi default Super Admin jika belum ada
+function initDatabaseSchema() {
+    const migrations = [
+        "ALTER TABLE users MODIFY COLUMN role VARCHAR(30) NOT NULL DEFAULT 'siswa'",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+        "ALTER TABLE leaderboard ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+        "ALTER TABLE questions ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+        "ALTER TABLE questions ADD COLUMN IF NOT EXISTS created_by INT NULL",
+        "ALTER TABLE student_history ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
+    ];
+
+    migrations.forEach(sql => {
+        db.query(sql, () => {});
+    });
+
+    seedSuperAdmin();
+}
+
 async function seedSuperAdmin() {
-    const alterSql = "ALTER TABLE users MODIFY COLUMN role VARCHAR(30) NOT NULL DEFAULT 'siswa'";
-    db.query(alterSql, () => {
-        const checkSql = "SELECT id, role FROM users WHERE username = 'superadmin' OR role = 'superadmin' LIMIT 1";
-        db.query(checkSql, async (err, results) => {
-            if (!err && (!results || results.length === 0)) {
-                try {
-                    const defaultPass = 'AdminHunter#2026';
-                    const hashedPassword = await bcrypt.hash(defaultPass, 10);
-                    const insertSql = "INSERT INTO users (username, email, password, role) VALUES ('superadmin', 'admin@codebughunter.com', ?, 'superadmin')";
-                    db.query(insertSql, [hashedPassword], (insertErr) => {
-                        if (!insertErr) {
-                            console.log("[SUPER ADMIN] Akun Default Super Admin berhasil diinisialisasi (username: superadmin, password: AdminHunter#2026)!");
-                        }
-                    });
-                } catch (e) {
-                    console.error("Gagal auto-seed superadmin:", e.message);
-                }
+    const checkSql = "SELECT id, role FROM users WHERE username = 'superadmin' OR role = 'superadmin' LIMIT 1";
+    db.query(checkSql, async (err, results) => {
+        if (!err && (!results || results.length === 0)) {
+            try {
+                const defaultPass = 'AdminHunter#2026';
+                const hashedPassword = await bcrypt.hash(defaultPass, 10);
+                const insertSql = "INSERT INTO users (username, email, password, role) VALUES ('superadmin', 'admin@codebughunter.com', ?, 'superadmin')";
+                db.query(insertSql, [hashedPassword], (insertErr) => {
+                    if (!insertErr) {
+                        console.log("[SUPER ADMIN] Akun Default Super Admin berhasil diinisialisasi (username: superadmin, password: AdminHunter#2026)!");
+                    }
+                });
+            } catch (e) {
+                console.error("Gagal auto-seed superadmin:", e.message);
             }
-        });
+        }
     });
 }
 
@@ -71,7 +85,7 @@ db.getConnection((err, conn) => {
     } else {
         console.log('[DATABASE] Terhubung ke Database MySQL/TiDB Code Bug Hunter via Connection Pool!');
         conn.release();
-        seedSuperAdmin();
+        initDatabaseSchema();
     }
 });
 
@@ -319,7 +333,19 @@ app.get('/api/leaderboard', (req, res) => {
         LIMIT 10
     `;
     db.query(sql, (err, results) => {
-        if (err) return res.status(500).json({ message: 'Database error: ' + err.message });
+        if (err) {
+            const fallbackSql = `
+                SELECT u.username, l.total_score, l.badge_title 
+                FROM leaderboard l 
+                JOIN users u ON l.user_id = u.id 
+                ORDER BY l.total_score DESC 
+                LIMIT 10
+            `;
+            return db.query(fallbackSql, (err2, results2) => {
+                if (err2) return res.status(500).json({ message: 'Database error: ' + err2.message });
+                res.status(200).json(results2.map(r => ({ ...r, id: 0, created_at: null })));
+            });
+        }
         res.status(200).json(results);
     });
 });
@@ -468,15 +494,22 @@ app.get('/api/admin/analytics', authenticateToken, (req, res) => {
 // --- API KHUSUS SUPER ADMIN (MANAJEMEN USER & SISTEM) ---
 // ========================================================
 
-// 1. Ambil Semua Daftar Pengguna
+// 1. Ambil Semua Daftar Pengguna (Akses Super Admin & Guru)
 app.get('/api/admin/users', authenticateToken, (req, res) => {
-    if (!isSuperAdmin(req.user.role)) {
-        return res.status(403).json({ message: 'Akses ditolak: Khusus Super Admin' });
+    if (!hasTeacherAccess(req.user.role)) {
+        return res.status(403).json({ message: 'Akses ditolak: Khusus Super Admin atau Guru' });
     }
 
     const sql = 'SELECT id, username, email, role, created_at FROM users ORDER BY id DESC';
     db.query(sql, (err, results) => {
-        if (err) return res.status(500).json({ message: 'Database error: ' + err.message });
+        if (err) {
+            // Fallback jika created_at belum ada
+            const fallbackSql = 'SELECT id, username, email, role FROM users ORDER BY id DESC';
+            return db.query(fallbackSql, (err2, results2) => {
+                if (err2) return res.status(500).json({ message: 'Database error: ' + err2.message });
+                res.status(200).json(results2.map(u => ({ ...u, created_at: null })));
+            });
+        }
         res.status(200).json(results);
     });
 });
@@ -561,26 +594,23 @@ app.get('/api/admin/system-stats', authenticateToken, (req, res) => {
     const sqlLeaderboard = "SELECT COUNT(*) as total_ranks FROM leaderboard";
 
     db.query(sqlUsers, (err1, rUsers) => {
-        if (err1) return res.status(500).json({ message: 'Database error' });
+        const u = (!err1 && rUsers && rUsers[0]) ? rUsers[0] : {};
         db.query(sqlQuestions, (err2, rQuestions) => {
-            if (err2) return res.status(500).json({ message: 'Database error' });
+            const q = (!err2 && rQuestions && rQuestions[0]) ? rQuestions[0] : {};
             db.query(sqlHistory, (err3, rHistory) => {
-                if (err3) return res.status(500).json({ message: 'Database error' });
+                const h = (!err3 && rHistory && rHistory[0]) ? rHistory[0] : {};
                 db.query(sqlLeaderboard, (err4, rLeaderboard) => {
-                    const u = rUsers[0] || {};
-                    const q = rQuestions[0] || {};
-                    const h = rHistory[0] || {};
-                    const l = rLeaderboard[0] || {};
+                    const l = (!err4 && rLeaderboard && rLeaderboard[0]) ? rLeaderboard[0] : {};
 
                     res.status(200).json({
-                        total_users: u.total || 0,
-                        total_siswa: u.total_siswa || 0,
-                        total_guru: u.total_guru || 0,
-                        total_admin: u.total_admin || 0,
-                        total_questions: q.total_questions || 0,
-                        total_attempts: h.total_attempts || 0,
-                        total_correct: h.total_correct || 0,
-                        total_ranks: l.total_ranks || 0
+                        total_users: Number(u.total) || 0,
+                        total_siswa: Number(u.total_siswa) || 0,
+                        total_guru: Number(u.total_guru) || 0,
+                        total_admin: Number(u.total_admin) || 0,
+                        total_questions: Number(q.total_questions) || 0,
+                        total_attempts: Number(h.total_attempts) || 0,
+                        total_correct: Number(h.total_correct) || 0,
+                        total_ranks: Number(l.total_ranks) || 0
                     });
                 });
             });

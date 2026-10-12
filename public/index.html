@@ -39,16 +39,18 @@
             <div class="header-actions">
                 <!-- Audio Controls -->
                 <button id="btn-toggle-bgm" class="btn-icon" onclick="toggleBGM()" title="Aktif/Nonaktifkan Musik">
-                    <span class="audio-label">BGM: ON</span>
+                    🎵 <span class="audio-label">BGM</span>
                 </button>
                 <button id="btn-toggle-sfx" class="btn-icon" onclick="toggleSFX()" title="Aktif/Nonaktifkan Efek Suara">
-                    <span class="audio-label">SFX: ON</span>
+                    🔊 <span class="audio-label">SFX</span>
                 </button>
 
                 <!-- User Session Badge -->
                 <div id="nav-user-badge" class="nav-user-badge" style="display: none;">
                     <div class="user-avatar-circle">
-                        <img src="favicon.png" class="brand-logo-img" style="width: 20px; height: 20px; margin: 0;" alt="Avatar">
+                        <svg class="avatar-svg" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                        </svg>
                     </div>
                     <div class="user-info-text">
                         <span id="nav-username" class="user-name-text">HUNTER</span>
@@ -77,21 +79,33 @@
                     <div class="feature-cards-grid">
                         <div class="feature-card">
                             <div class="card-icon">
-                                <img src="favicon.png" class="brand-logo-img" style="width: 32px; height: 32px; margin: 0;" alt="Editor Simulator">
+                                <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="16 18 22 12 16 6"></polyline>
+                                    <polyline points="8 6 2 12 8 18"></polyline>
+                                </svg>
                             </div>
                             <h3>Editor Simulator</h3>
                             <p>Deteksi baris yang salah langsung di dalam simulator editor kode multi-bahasa.</p>
                         </div>
                         <div class="feature-card">
                             <div class="card-icon">
-                                <img src="favicon.png" class="brand-logo-img" style="width: 32px; height: 32px; margin: 0;" alt="Tipe Error">
+                                <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="8" y="9" width="8" height="8" rx="4"></rect>
+                                    <path d="M6 13h2"></path><path d="M16 13h2"></path>
+                                    <path d="M4 8l3 3"></path><path d="M20 8l-3 3"></path>
+                                    <path d="M4 18l3-3"></path><path d="M20 18l-3-3"></path>
+                                    <path d="M9 6l1-2"></path><path d="M15 6l-1-2"></path>
+                                </svg>
                             </div>
                             <h3>Uji Tipe Error</h3>
                             <p>Identifikasi apakah bug merupakan Syntax Error, Logic Error, atau Runtime Error.</p>
                         </div>
                         <div class="feature-card">
                             <div class="card-icon">
-                                <img src="favicon.png" class="brand-logo-img" style="width: 32px; height: 32px; margin: 0;" alt="Sertifikat Resmi">
+                                <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="8" r="6"></circle>
+                                    <path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"></path>
+                                </svg>
                             </div>
                             <h3>Sertifikat Resmi</h3>
                             <p>Kumpulkan poin dan unduh sertifikat pencapaian resmi kelulusan debugging Anda.</p>
@@ -110,7 +124,10 @@
             <div id="frame-login" class="frame">
                 <div class="auth-card">
                     <div class="card-header-icon">
-                        <img src="favicon.png" class="hero-logo-img" alt="Code Bug Hunter">
+                        <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                        </svg>
                     </div>
                     <h2 class="auth-title">SYSTEM LOGIN</h2>
                     <p class="auth-subtitle">Masukkan identitas akun untuk membuka akses terminal.</p>
@@ -138,7 +155,12 @@
             <div id="frame-register" class="frame">
                 <div class="auth-card">
                     <div class="card-header-icon">
-                        <img src="favicon.png" class="hero-logo-img" alt="Code Bug Hunter">
+                        <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#e3b341" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="8.5" cy="7" r="4"></circle>
+                            <line x1="20" y1="8" x2="20" y2="14"></line>
+                            <line x1="23" y1="11" x2="17" y2="11"></line>
+                        </svg>
                     </div>
                     <h2 class="auth-title" style="color: #e3b341;">REGISTRASI AKUN</h2>
                     <p class="auth-subtitle">Daftarkan akun sebagai Siswa untuk bermain atau Guru untuk kelola soal.</p>
@@ -463,7 +485,9 @@
                     <div class="dashboard-menu-grid">
                         <div class="menu-tile primary-tile" onclick="playSFX(); goToFrame('frame-03')">
                             <div class="tile-icon">
-                                <img src="favicon.png" class="brand-logo-img" style="width: 32px; height: 32px; margin: 0;" alt="Mulai">
+                                <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                                </svg>
                             </div>
                             <h3>MULAI BERMAIN</h3>
                             <p>Pilih bahasa pemrograman & taklukkan 10 misi simulasi bug.</p>
@@ -472,7 +496,11 @@
 
                         <div class="menu-tile" onclick="playSFX(); showStudentStats()">
                             <div class="tile-icon">
-                                <img src="favicon.png" class="brand-logo-img" style="width: 32px; height: 32px; margin: 0;" alt="Rapor">
+                                <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="18" y1="20" x2="18" y2="10"></line>
+                                    <line x1="12" y1="20" x2="12" y2="4"></line>
+                                    <line x1="6" y1="20" x2="6" y2="14"></line>
+                                </svg>
                             </div>
                             <h3>RAPOR SAYA</h3>
                             <p>Pantau persentase akurasi & riwayat penyelesaian bug kodingmu.</p>
@@ -481,7 +509,13 @@
 
                         <div class="menu-tile" onclick="playSFX(); loadLeaderboard()">
                             <div class="tile-icon">
-                                <img src="favicon.png" class="brand-logo-img" style="width: 32px; height: 32px; margin: 0;" alt="Leaderboard">
+                                <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
+                                    <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
+                                    <path d="M4 22h16"></path>
+                                    <path d="M10 14.66V17c0 .55-.45 1-1 1H7v4h10v-4h-2c-.55 0-1-.45-1-1v-2.34"></path>
+                                    <path d="M18 2H6v7a6 6 0 0 0 12 0V2z"></path>
+                                </svg>
                             </div>
                             <h3>LEADERBOARD</h3>
                             <p>Lihat peringkat Top 10 Hunter dengan perolehan skor tertinggi.</p>
@@ -490,7 +524,10 @@
 
                         <div class="menu-tile" onclick="playSFX(); goToFrame('frame-02')">
                             <div class="tile-icon">
-                                <img src="favicon.png" class="brand-logo-img" style="width: 32px; height: 32px; margin: 0;" alt="Panduan">
+                                <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                                </svg>
                             </div>
                             <h3>PANDUAN ATURAN</h3>
                             <p>Pelajari aturan bonus waktu, penalti hint, dan sistem badge.</p>
@@ -840,7 +877,13 @@
                 <div class="appreciation-card">
                     <div class="completion-pill">EVALUASI SELESAI</div>
                     <div id="badge-icon" class="trophy-icon">
-                        <img src="favicon.png" class="trophy-img" alt="Predikat Keberhasilan">
+                        <svg viewBox="0 0 24 24" width="68" height="68" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="filter: drop-shadow(0 0 16px rgba(245, 158, 11, 0.6));">
+                            <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
+                            <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
+                            <path d="M4 22h16"></path>
+                            <path d="M10 14.66V17c0 .55-.45 1-1 1H7v4h10v-4h-2c-.55 0-1-.45-1-1v-2.34"></path>
+                            <path d="M18 2H6v7a6 6 0 0 0 12 0V2z"></path>
+                        </svg>
                     </div>
                     <h1 class="completion-title">MISI SELESAI!</h1>
                     <p style="color: #94a3b8; font-size: 16px;">Sistem evaluasi Code Bug Hunter telah mencatat hasil performa Anda.</p>
