@@ -1,85 +1,202 @@
-// game.js - Secure Game Logic
+// game.js - Logika Gameplay, Editor Interaktif, HUD Arcade, & Generator Sertifikat Resmi
 
-let selectedLang = ''; let selectedLevel = '';
-let questionsList = []; let currentQIndex = 0;
-let hp = 3; let score = 0; let attempts = 0; let hintUsed = false;
-let timerInterval; let timeLeft = 60;
+let selectedLang = ''; 
+let selectedLevel = '';
+let questionsList = []; 
+let currentQIndex = 0;
+let hp = 3; 
+let score = 0; 
+let attempts = 0; 
+let hintUsed = false;
+let timerInterval; 
+let timeLeft = 60;
+const MAX_TIME = 60;
 let globalLeaderboardData = [];
 
-// Fungsi helper: catat history
-async function recordStudentHistory(isCorrect) {
-    if (!currentUser.id || currentUser.role !== 'siswa') return;
-    const currentQ = questionsList[currentQIndex];
-    if (!currentQ || !currentQ.id) return;
-    // Sudah ditangani di backend saat panggil /api/answer, tapi fungsi ini dipertahankan jika butuh
-}
-
+// Memulai Game
 async function fetchQuestionsAndStart() {
+    if (!selectedLang || !selectedLevel) {
+        showToast("Pilih bahasa pemrograman dan tingkat kesulitan terlebih dahulu!", "warning");
+        return;
+    }
+
+    const startBtn = document.getElementById('btn-lanjut');
+    if (startBtn) {
+        startBtn.disabled = true;
+        startBtn.innerText = "MEMUAT SOAL...";
+    }
+
     try {
         const res = await fetchWithAuth(`/api/questions?lang=${selectedLang}&level=${selectedLevel}`);
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            showToast(errData.message || "Gagal mengambil soal dari server.", "error");
+            return;
+        }
+
         const data = await res.json();
-        if(data.length === 0) { showToast("Soal belum tersedia."); return; }
+        if (!data || data.length === 0) { 
+            showToast("Belum ada soal untuk kategori ini di database.", "info"); 
+            return; 
+        }
         
-        questionsList = data; currentQIndex = 0; hp = 3; score = 0;
-        if(bgm) { bgm.volume = 0.3; bgm.play().catch(()=>{}); }
-        loadCurrentQuestion(); goToFrame('frame-04');
-    } catch (e) { showToast("Gagal mengambil soal.", "error"); }
+        questionsList = data; 
+        currentQIndex = 0; 
+        hp = 3; 
+        score = 0;
+
+        if (bgm && !isBgmMuted) { 
+            bgm.volume = 0.25; 
+            bgm.play().catch(() => {}); 
+        }
+
+        goToFrame('frame-04');
+        loadCurrentQuestion(); 
+    } catch (e) { 
+        showToast("Gagal mengambil soal. Pastikan koneksi aktif.", "error"); 
+    } finally {
+        if (startBtn) {
+            startBtn.disabled = false;
+            startBtn.innerText = "LANJUT KE EDITOR";
+        }
+    }
 }
 
 function selectLang(lang) {
     selectedLang = lang;
     document.querySelectorAll('[id^="lang-"]').forEach(btn => btn.classList.remove('selected'));
-    document.getElementById('lang-' + lang).classList.add('selected');
+    const btn = document.getElementById('lang-' + lang);
+    if (btn) btn.classList.add('selected');
     checkReadyToPlay();
 }
+
 function selectLevel(level) {
     selectedLevel = level;
     document.querySelectorAll('[id^="lvl-"]').forEach(btn => btn.classList.remove('selected'));
-    document.getElementById('lvl-' + level).classList.add('selected');
+    const btn = document.getElementById('lvl-' + level);
+    if (btn) btn.classList.add('selected');
     checkReadyToPlay();
 }
+
 function checkReadyToPlay() {
-    if (selectedLang !== '' && selectedLevel !== '') document.getElementById('btn-lanjut').style.display = 'inline-block';
-}
-
-function startTimer() {
-    clearInterval(timerInterval); timeLeft = 60;
-    document.getElementById('timer-display').innerText = timeLeft;
-    timerInterval = setInterval(() => {
-        timeLeft--; document.getElementById('timer-display').innerText = timeLeft;
-        if (timeLeft <= 0) handleTimeOut();
-    }, 1000);
-}
-function stopTimer() { clearInterval(timerInterval); }
-
-function handleTimeOut() {
-    stopTimer(); playWrong(); attempts++; updateHUD();
-    document.getElementById('game-container').classList.add('flash-red');
-    setTimeout(() => document.getElementById('game-container').classList.remove('flash-red'), 500);
-
-    if (attempts >= 5) {
-        hp--; 
-        if (hp <= 0) triggerAppreciation(); 
-        else { showToast("Waktu habis dan gagal 5x!", "error"); showReviewFrameFallback(); }
-    } else {
-        showToast(`Waktu Habis! Terhitung 1x gagal.\nSisa kesempatan: ${5 - attempts}x lagi.`, "error"); startTimer();
+    const btnLanjut = document.getElementById('btn-lanjut');
+    if (selectedLang !== '' && selectedLevel !== '') {
+        if (btnLanjut) {
+            btnLanjut.style.display = 'inline-flex';
+            btnLanjut.classList.add('pulse-btn');
+        }
     }
 }
 
+// Timer Engine
+function startTimer() {
+    clearInterval(timerInterval); 
+    timeLeft = MAX_TIME;
+    updateTimerUI();
+
+    timerInterval = setInterval(() => {
+        timeLeft--; 
+        updateTimerUI();
+        if (timeLeft <= 0) {
+            handleTimeOut();
+        }
+    }, 1000);
+}
+
+function stopTimer() { 
+    clearInterval(timerInterval); 
+}
+
+function updateTimerUI() {
+    const timerDisplay = document.getElementById('timer-display');
+    const timerBar = document.getElementById('timer-progress-fill');
+    
+    if (timerDisplay) timerDisplay.innerText = timeLeft;
+    
+    const percent = Math.max(0, (timeLeft / MAX_TIME) * 100);
+    if (timerBar) {
+        timerBar.style.width = percent + '%';
+        if (timeLeft <= 10) {
+            timerBar.style.background = '#f85149';
+        } else if (timeLeft <= 25) {
+            timerBar.style.background = '#e3b341';
+        } else {
+            timerBar.style.background = '#3fb950';
+        }
+    }
+}
+
+function handleTimeOut() {
+    stopTimer(); 
+    playWrong(); 
+    attempts++; 
+    updateHUD();
+    flashScreenRed();
+
+    if (attempts >= 5) {
+        hp--; 
+        if (hp <= 0) {
+            triggerAppreciation(); 
+        } else { 
+            showToast("Waktu habis dan gagal 5x berturut-turut! (-1 HP)", "error"); 
+            showReviewFrameFallback(); 
+        }
+    } else {
+        showToast(`Waktu Habis! Terhitung 1x gagal.\nSisa kesempatan: ${5 - attempts}x lagi.`, "error"); 
+        startTimer();
+    }
+}
+
+function flashScreenRed() {
+    const container = document.getElementById('app-main-viewport') || document.body;
+    container.classList.add('flash-red');
+    setTimeout(() => container.classList.remove('flash-red'), 450);
+}
+
+// Load Current Question into VS Code-style Editor
 function loadCurrentQuestion() {
-    attempts = 0; hintUsed = false; updateHUD();
-    document.getElementById('hint-display').style.display = 'none'; document.getElementById('btn-hint').disabled = false;
-    const editor = document.getElementById('code-editor'); editor.innerHTML = '';
+    attempts = 0; 
+    hintUsed = false; 
+    updateHUD();
+    
+    const hintDisplay = document.getElementById('hint-display');
+    const btnHint = document.getElementById('btn-hint');
+    if (hintDisplay) hintDisplay.style.display = 'none'; 
+    if (btnHint) btnHint.disabled = false;
+
+    // Update Tab Filename
+    const tabNameEl = document.getElementById('editor-tab-filename');
+    if (tabNameEl) {
+        const extMap = { python: 'main.py', javascript: 'app.js', java: 'Main.java', php: 'index.php', cpp: 'solution.cpp', css: 'style.css' };
+        tabNameEl.innerText = extMap[selectedLang] || `code.${selectedLang}`;
+    }
+
+    const editor = document.getElementById('code-editor'); 
+    editor.innerHTML = '';
     const currentQ = questionsList[currentQIndex];
-    currentQ.code_lines.forEach((line, index) => {
-        let div = document.createElement('div'); div.className = 'code-line';
-        // HTML highlight-js friendly
-        div.innerHTML = `<span style="color:#8b949e; margin-right:15px; user-select:none;">${index + 1}</span><code class="language-${selectedLang}">${line.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code>`;
+
+    let codeLines = [];
+    try {
+        codeLines = typeof currentQ.code_lines === 'string' ? JSON.parse(currentQ.code_lines) : currentQ.code_lines;
+    } catch(e) {
+        codeLines = [currentQ.code_lines];
+    }
+
+    codeLines.forEach((line, index) => {
+        let div = document.createElement('div'); 
+        div.className = 'editor-line';
+        div.id = `code-line-${index}`;
+        
+        div.innerHTML = `
+            <span class="editor-gutter">${index + 1}</span>
+            <span class="editor-code-content"><code class="language-${selectedLang}">${line.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></span>
+            <span class="line-select-indicator">CARI BUG</span>
+        `;
         div.onclick = () => handleLineClick(index);
         editor.appendChild(div);
     });
     
-    // Terapkan Prism.js highlight jika diload
+    // Terapkan Prism Syntax Highlighting jika tersedia
     if (window.Prism) {
         Prism.highlightAllUnder(editor);
     }
@@ -88,76 +205,147 @@ function loadCurrentQuestion() {
 }
 
 function updateHUD() {
-    let hearts = ''; for(let i=0; i<hp; i++) hearts += '♥';
-    document.getElementById('hp-display').innerText = hearts;
-    document.getElementById('score-display').innerText = score;
-    document.getElementById('q-counter').innerText = `${currentQIndex + 1} / ${questionsList.length}`;
-    document.getElementById('attempt-display').innerText = `${attempts} / 5`;
-    document.getElementById('timer-display').innerText = timeLeft;
+    // Render Hearts
+    let hearts = ''; 
+    for(let i = 0; i < hp; i++) hearts += '❤️';
+    for(let i = hp; i < 3; i++) hearts += '🖤';
+    
+    const hpEl = document.getElementById('hp-display');
+    if (hpEl) hpEl.innerHTML = hearts;
+
+    const scoreEl = document.getElementById('score-display');
+    if (scoreEl) scoreEl.innerText = score.toLocaleString();
+
+    const qCounter = document.getElementById('q-counter');
+    if (qCounter) qCounter.innerText = `${currentQIndex + 1} / ${questionsList.length}`;
+
+    const attemptEl = document.getElementById('attempt-display');
+    if (attemptEl) attemptEl.innerText = `${attempts}/5`;
+
+    const qProgress = document.getElementById('q-progress-bar');
+    if (qProgress) {
+        const percent = ((currentQIndex + 1) / questionsList.length) * 100;
+        qProgress.style.width = percent + '%';
+    }
 }
 
 function useHint() {
-    if(!hintUsed) {
-        hintUsed = true; hp -= 1; playWrong(); 
-        if (hp <= 0) { stopTimer(); triggerAppreciation(); return; }
+    if (!hintUsed) {
+        hintUsed = true; 
+        hp -= 1; 
+        playWrong(); 
+        
+        if (hp <= 0) { 
+            stopTimer(); 
+            triggerAppreciation(); 
+            return; 
+        }
+
         updateHUD();
-        document.getElementById('hint-display').innerText = "💡 Hint: " + questionsList[currentQIndex].hint_text;
-        document.getElementById('hint-display').style.display = 'block';
-        document.getElementById('btn-hint').disabled = true;
+        const hintDisplay = document.getElementById('hint-display');
+        if (hintDisplay) {
+            hintDisplay.innerHTML = `<strong>💡 Bantuan:</strong> ${questionsList[currentQIndex].hint_text}`;
+            hintDisplay.style.display = 'block';
+        }
+        
+        const btnHint = document.getElementById('btn-hint');
+        if (btnHint) btnHint.disabled = true;
+        showToast("Bantuan aktif! (-1 HP, skor dasar berkurang 50%)", "warning");
     }
 }
 
 async function handleLineClick(index) {
     const currentQ = questionsList[currentQIndex];
     attempts++; 
+
+    // Visual line pulse
+    const lineEl = document.getElementById(`code-line-${index}`);
+    if (lineEl) lineEl.classList.add('line-clicked');
     
     try {
         const res = await fetchWithAuth('/api/answer', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
-                question_id: currentQ.id, guessed_line: index, guessed_error_type: null, 
-                time_left: timeLeft, hint_used: hintUsed, attempt_count: attempts
+                question_id: currentQ.id, 
+                guessed_line: index, 
+                guessed_error_type: null, 
+                time_left: timeLeft, 
+                hint_used: hintUsed, 
+                attempt_count: attempts
             })
         });
         const data = await res.json();
         
         if (data.is_correct_line) {
-            playCorrect(); stopTimer(); 
+            playCorrect(); 
+            stopTimer(); 
             currentQ.temp_guessed_line = index; 
-            document.getElementById('overlay-popup').style.display = 'flex';
+            
+            const overlayPopup = document.getElementById('overlay-popup');
+            if (overlayPopup) {
+                overlayPopup.style.display = 'flex';
+                const lineInfo = document.getElementById('popup-line-info');
+                if (lineInfo) lineInfo.innerText = `Baris #${index + 1}`;
+            }
         } else {
-            playWrong(); updateHUD();
-            document.getElementById('game-container').classList.add('flash-red');
-            setTimeout(() => document.getElementById('game-container').classList.remove('flash-red'), 500);
+            playWrong(); 
+            updateHUD();
+            flashScreenRed();
+
+            if (lineEl) {
+                lineEl.classList.add('line-wrong');
+                setTimeout(() => lineEl.classList.remove('line-wrong'), 600);
+            }
+
             if (attempts >= 5) {
-                hp--; stopTimer(); 
-                if (hp <= 0) triggerAppreciation(); 
-                else { showToast("Kesempatan habis (5x Gagal)!", "error"); showReviewFrameFallback(); }
+                hp--; 
+                stopTimer(); 
+                if (hp <= 0) {
+                    triggerAppreciation(); 
+                } else { 
+                    showToast("Kesempatan habis untuk baris ini (5x Gagal)! (-1 HP)", "error"); 
+                    showReviewFrameFallback(); 
+                }
+            } else {
+                showToast(`Bukan baris ini! Sisa kesempatan: ${5 - attempts}x lagi.`, "error");
             }
         }
-    } catch (e) { console.error("Gagal verifikasi baris"); }
+    } catch (e) { 
+        console.error("Gagal verifikasi baris:", e);
+        showToast("Koneksi gagal saat mengecek baris", "error");
+    }
 }
 
 async function checkErrorType(answerType) {
+    playSFX();
     const currentQ = questionsList[currentQIndex];
     try {
         const res = await fetchWithAuth('/api/answer', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
-                question_id: currentQ.id, guessed_line: currentQ.temp_guessed_line, guessed_error_type: answerType, 
-                time_left: timeLeft, hint_used: hintUsed, attempt_count: attempts
+                question_id: currentQ.id, 
+                guessed_line: currentQ.temp_guessed_line, 
+                guessed_error_type: answerType, 
+                time_left: timeLeft, 
+                hint_used: hintUsed, 
+                attempt_count: attempts
             })
         });
         const data = await res.json();
         
+        const overlayPopup = document.getElementById('overlay-popup');
+        if (overlayPopup) overlayPopup.style.display = 'none';
+
         if (data.is_correct) {
             playCorrect(); 
             score += data.earned_points; 
-            document.getElementById('overlay-popup').style.display = 'none'; 
+            showToast(`Luar biasa! +${data.earned_points} Poin`, "success");
             
-            document.getElementById('review-wrong').innerText = data.wrong_snippet;
-            document.getElementById('review-right').innerText = data.right_snippet;
-            document.getElementById('review-explanation').innerText = data.explanation;
+            document.getElementById('review-wrong').innerText = data.wrong_snippet || '-';
+            document.getElementById('review-right').innerText = data.right_snippet || '-';
+            document.getElementById('review-explanation').innerText = data.explanation || 'Pembahasan berhasil dimuat.';
             
             if (window.Prism) {
                 document.getElementById('review-wrong').className = `language-${selectedLang}`;
@@ -168,107 +356,181 @@ async function checkErrorType(answerType) {
             
             showReviewFrame(true);
         } else {
-            playWrong(); attempts++; updateHUD(); document.getElementById('overlay-popup').style.display = 'none';
+            playWrong(); 
+            attempts++; 
+            updateHUD(); 
+            flashScreenRed();
+
             if (attempts >= 5) {
                 hp--; 
-                if (hp <= 0) triggerAppreciation(); else { showToast("Kesempatan habis!", "error"); showReviewFrameFallback(); }
+                if (hp <= 0) {
+                    triggerAppreciation(); 
+                } else { 
+                    showToast("Salah jenis error dan kesempatan habis! (-1 HP)", "error"); 
+                    showReviewFrameFallback(); 
+                }
             } else {
-                showToast(`Salah menebak jenis error! Sisa kesempatan: ${5 - attempts}x.`, "error"); startTimer();
+                showToast(`Jenis error salah! Sisa kesempatan: ${5 - attempts}x.`, "error"); 
+                startTimer();
             }
         }
-    } catch (e) { console.error("Gagal periksa tipe error"); }
+    } catch (e) { 
+        console.error("Gagal periksa tipe error:", e); 
+    }
 }
 
 function showReviewFrameFallback() {
-    // Karena kita tidak mendownload jawaban di awal, kalau gagal ya gagal saja.
-    document.getElementById('review-wrong').innerText = "Gagal menebak.";
-    document.getElementById('review-right').innerText = "Belajar lagi ya!";
-    document.getElementById('review-explanation').innerText = "Kesempatanmu habis untuk soal ini.";
+    document.getElementById('review-wrong').innerText = "Gagal menemukan bug dalam 5 kesempatan.";
+    document.getElementById('review-right').innerText = "Pelajari struktur sintaks dan logika bahasa ini lagi.";
+    document.getElementById('review-explanation').innerText = "Kesempatanmu habis untuk soal ini. Evaluasi baris kode dengan teliti di soal berikutnya!";
     showReviewFrame(false);
 }
 
 function showReviewFrame(isCorrect) {
-    stopTimer(); const currentQ = questionsList[currentQIndex];
-    updateHUD(); document.getElementById('review-score').innerText = score; goToFrame('frame-06');
+    stopTimer(); 
+    updateHUD(); 
+    document.getElementById('review-score').innerText = score.toLocaleString(); 
+    goToFrame('frame-06');
+
+    const btnNext = document.getElementById('btn-next-q');
+    const btnFinish = document.getElementById('btn-finish-q');
+    
     if (currentQIndex < questionsList.length - 1) {
-        document.getElementById('btn-next-q').style.display = 'inline-block'; document.getElementById('btn-finish-q').style.display = 'none';
+        if (btnNext) btnNext.style.display = 'inline-flex'; 
+        if (btnFinish) btnFinish.style.display = 'none';
     } else {
-        document.getElementById('btn-next-q').style.display = 'none'; document.getElementById('btn-finish-q').style.display = 'inline-block';
+        if (btnNext) btnNext.style.display = 'none'; 
+        if (btnFinish) btnFinish.style.display = 'inline-flex';
     }
 }
 
-function nextQuestion() { currentQIndex++; loadCurrentQuestion(); goToFrame('frame-04'); }
+function nextQuestion() { 
+    currentQIndex++; 
+    loadCurrentQuestion(); 
+    goToFrame('frame-04'); 
+}
 
-async function triggerAppreciation() { stopTimer(); if(bgm) bgm.pause(); document.getElementById('overlay-popup').style.display = 'none'; showAppreciation(); }
+async function triggerAppreciation() { 
+    stopTimer(); 
+    if (bgm) bgm.pause(); 
+    const overlayPopup = document.getElementById('overlay-popup');
+    if (overlayPopup) overlayPopup.style.display = 'none'; 
+    showAppreciation(); 
+}
 
 async function showAppreciation() {
-    goToFrame('frame-apresiasi'); document.getElementById('final-score').innerText = score;
-    let badge = 'Junior Trainee'; let icon = '🎖️';
-    if (score >= 3000) { badge = 'Master Bug Hunter'; icon = '🏆'; } 
-    else if (score >= 1500) { badge = 'Senior Developer'; icon = '🏅'; }
-    document.getElementById('badge-title').innerText = badge; document.getElementById('badge-icon').innerText = icon;
+    goToFrame('frame-apresiasi'); 
+    document.getElementById('final-score').innerText = score.toLocaleString();
     
-    if(currentUser.id && currentUser.role !== 'guru') {
-        try { await fetchWithAuth('/api/save-score', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ score: score, badge: badge }) }); } catch(e) {}
+    let badge = 'Junior Hunter'; 
+    let icon = '🎖️';
+    let color = '#3fb950';
+
+    if (score >= 3000) { 
+        badge = 'Master Bug Hunter'; 
+        icon = '👑'; 
+        color = '#e3b341';
+    } else if (score >= 1500) { 
+        badge = 'Senior Developer'; 
+        icon = '🏆'; 
+        color = '#58a6ff';
+    }
+
+    const badgeTitleEl = document.getElementById('badge-title');
+    const badgeIconEl = document.getElementById('badge-icon');
+    if (badgeTitleEl) {
+        badgeTitleEl.innerText = badge;
+        badgeTitleEl.style.color = color;
+    }
+    if (badgeIconEl) badgeIconEl.innerText = icon;
+    
+    if (currentUser.id && currentUser.role !== 'guru') {
+        try { 
+            await fetchWithAuth('/api/save-score', { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify({ score: score, badge: badge }) 
+            }); 
+            showToast("Skor dan badge Anda berhasil disimpan ke Leaderboard!", "success");
+        } catch(e) {}
     }
 }
 
 function resetGameToDashboard() {
-    stopTimer(); selectedLang = ''; selectedLevel = '';
+    stopTimer(); 
+    selectedLang = ''; 
+    selectedLevel = '';
     document.querySelectorAll('button').forEach(btn => btn.classList.remove('selected'));
-    document.getElementById('btn-lanjut').style.display = 'none'; goToFrame('frame-01');
+    const btnLanjut = document.getElementById('btn-lanjut');
+    if (btnLanjut) btnLanjut.style.display = 'none'; 
+    goToFrame('frame-01');
 }
 
+// Leaderboard Screen
 async function loadLeaderboard() {
     try {
+        const tbody = document.getElementById('leaderboard-body');
+        if (tbody) tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 30px; color:#58a6ff;">Memuat papan peringkat...</td></tr>';
+        
         const res = await fetchWithAuth('/api/leaderboard');
         globalLeaderboardData = await res.json();
+        
         const searchInput = document.getElementById('search-leaderboard');
-        if(searchInput) searchInput.value = '';
+        if (searchInput) searchInput.value = '';
         renderLeaderboardTable(globalLeaderboardData);
         goToFrame('frame-leaderboard');
-    } catch (e) { showToast("Gagal memuat leaderboard", "error"); }
+    } catch (e) { 
+        showToast("Gagal memuat leaderboard.", "error"); 
+    }
 }
 
 function renderLeaderboardTable(data, isSearching = false) {
-    const tbody = document.getElementById('leaderboard-body'); tbody.innerHTML = '';
-    if (data.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#8b949e;">Belum ada data.</td></tr>'; return; }
+    const tbody = document.getElementById('leaderboard-body'); 
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    
+    if (!data || data.length === 0) { 
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#8b949e; padding: 30px;">Belum ada catatan skor hunter.</td></tr>'; 
+        return; 
+    }
+
     data.forEach((row, index) => {
-        if (!isSearching && index === 10) {
-            let divider = document.createElement('tr');
-            divider.innerHTML = `<td colspan="4" style="text-align: center; color: #8b949e; background: #21262d; font-size: 12px; letter-spacing: 2px;">--- PERINGKAT 11 DAN SETERUSNYA ---</td>`;
-            tbody.appendChild(divider);
-        }
         let tr = document.createElement('tr');
-        let rankColor = index < 3 ? '#e3b341' : (index < 10 ? '#3fb950' : '#c9d1d9');
-        if (isSearching) { tr.style.background = 'rgba(88, 166, 255, 0.1)'; rankColor = '#58a6ff'; }
+        
+        let rankBadge = `${index + 1}`;
+        let rowClass = '';
+        if (index === 0) { rankBadge = '🥇 #1'; rowClass = 'rank-gold'; }
+        else if (index === 1) { rankBadge = '🥈 #2'; rowClass = 'rank-silver'; }
+        else if (index === 2) { rankBadge = '🥉 #3'; rowClass = 'rank-bronze'; }
+
+        const isCurrent = currentUser.username && row.username.toLowerCase() === currentUser.username.toLowerCase();
+        if (isCurrent) rowClass += ' current-user-row';
+
+        tr.className = rowClass;
         tr.innerHTML = `
-            <td style="color: ${rankColor}; font-weight: bold;">${index + 1}</td>
-            <td style="color: ${isSearching ? '#58a6ff' : ''}; font-weight: ${isSearching ? 'bold' : 'normal'};">${row.username}</td>
-            <td>${row.total_score}</td>
-            <td>${row.badge_title}</td>
+            <td style="font-weight: bold;">${rankBadge}</td>
+            <td style="font-weight: 600;">
+                <span class="user-cell-name">${row.username}</span>
+                ${isCurrent ? '<span class="you-pill">KAMU</span>' : ''}
+            </td>
+            <td style="font-weight: bold; color: #3fb950;">${(row.total_score || 0).toLocaleString()}</td>
+            <td><span class="badge-pill">${row.badge_title || 'Junior Hunter'}</span></td>
         `;
         tbody.appendChild(tr);
     });
 }
 
 function searchLeaderboard() {
-    const keyword = document.getElementById('search-leaderboard').value.toLowerCase();
-    if (keyword === "") { renderLeaderboardTable(globalLeaderboardData, false); return; }
-    const searchedData = globalLeaderboardData.filter(row => row.username.toLowerCase().includes(keyword));
-    const tbody = document.getElementById('leaderboard-body'); tbody.innerHTML = '';
-    if (searchedData.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#f85149;">Pemain tidak ditemukan.</td></tr>'; return; }
-    
-    globalLeaderboardData.forEach((row, index) => {
-        if (row.username.toLowerCase().includes(keyword)) {
-            let tr = document.createElement('tr');
-            tr.style.background = 'rgba(88, 166, 255, 0.2)'; 
-            tr.innerHTML = `<td style="color: #58a6ff; font-weight: bold;">${index + 1}</td><td style="color: #58a6ff; font-weight: bold;">${row.username}</td><td>${row.total_score}</td><td>${row.badge_title}</td>`;
-            tbody.appendChild(tr);
-        }
-    });
+    const keyword = (document.getElementById('search-leaderboard').value || '').trim().toLowerCase();
+    if (keyword === "") { 
+        renderLeaderboardTable(globalLeaderboardData, false); 
+        return; 
+    }
+    const filtered = globalLeaderboardData.filter(row => row.username.toLowerCase().includes(keyword));
+    renderLeaderboardTable(filtered, true);
 }
 
+// Student Stats (Rapor Akademik)
 async function showStudentStats() {
     if (!currentUser.id) return;
     try {
@@ -276,33 +538,140 @@ async function showStudentStats() {
         const lvl = document.getElementById('rapor-lvl') ? document.getElementById('rapor-lvl').value : '';
         let url = `/api/student/stats/${currentUser.id}`;
         if (lang || lvl) url += `?lang=${lang}&level=${lvl}`;
+        
         const res = await fetchWithAuth(url);
         const stats = await res.json();
-        document.getElementById('stat-total').innerText = stats.total;
-        document.getElementById('stat-benar').innerText = stats.benar;
-        document.getElementById('stat-gagal').innerText = stats.gagal;
-        document.getElementById('stat-akurasi').innerText = stats.akurasi + "%";
+        
+        document.getElementById('stat-total').innerText = stats.total || 0;
+        document.getElementById('stat-benar').innerText = stats.benar || 0;
+        document.getElementById('stat-gagal').innerText = stats.gagal || 0;
+        document.getElementById('stat-akurasi').innerText = (stats.akurasi || 0) + "%";
+        
+        const akurasiBar = document.getElementById('stat-akurasi-bar');
+        if (akurasiBar) {
+            akurasiBar.style.width = (stats.akurasi || 0) + '%';
+        }
+
         goToFrame('frame-rapor');
-    } catch (e) { showToast("Gagal memuat rapor belajar.", "error"); }
+    } catch (e) { 
+        showToast("Gagal memuat rapor belajar.", "error"); 
+    }
 }
 
+// Unduh Sertifikat Resmi (jsPDF Pro Design)
 function downloadCertificate() {
+    if (!window.jspdf || !window.jspdf.jsPDF) {
+        showToast("Modul cetak PDF sedang dimuat, mohon coba sesaat lagi.", "warning");
+        return;
+    }
+
     const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({ orientation: 'landscape' });
-    doc.setFillColor(13, 17, 23); doc.rect(0, 0, 297, 210, 'F');
-    doc.setDrawColor(88, 166, 255); doc.setLineWidth(2); doc.rect(10, 10, 277, 190);
-    doc.setTextColor(227, 179, 65); doc.setFontSize(30); doc.text("SERTIFIKAT PENCAPAIAN", 148.5, 45, { align: "center" });
-    doc.setTextColor(201, 209, 217); doc.setFontSize(16); doc.text("Diberikan dengan penuh rasa bangga kepada:", 148.5, 75, { align: "center" });
-    doc.setTextColor(88, 166, 255); doc.setFontSize(36); doc.text(currentUser.username.toUpperCase(), 148.5, 100, { align: "center" });
-    doc.setTextColor(201, 209, 217); doc.setFontSize(16);
-    const langDisplay = selectedLang ? selectedLang.toUpperCase() : "Semua Bahasa";
-    const lvlDisplay = selectedLevel ? selectedLevel.charAt(0).toUpperCase() + selectedLevel.slice(1) : "Semua Level";
-    doc.text(`Atas keberhasilannya menyelesaikan simulasi Code Bug Hunter (${langDisplay} - ${lvlDisplay})`, 148.5, 125, { align: "center" });
-    const badge = document.getElementById('badge-title').innerText;
-    const currentScore = document.getElementById('final-score').innerText;
-    doc.text(`dengan Predikat: ${badge} (Skor: ${currentScore})`, 148.5, 140, { align: "center" });
-    const today = new Date(); const dateStr = today.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-    doc.setFontSize(12); doc.text(`Diterbitkan pada: ${dateStr}`, 148.5, 175, { align: "center" });
-    const fileName = `Sertifikat_${currentUser.username}_CodeBugHunter_${langDisplay}_${lvlDisplay}.pdf`;
-    doc.save(fileName);
+    const doc = new jsPDF({ 
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4'
+    });
+
+    const pageWidth = 297;
+    const pageHeight = 210;
+
+    // Background Gradient Simulated
+    doc.setFillColor(10, 15, 29); // Dark Cyber Slate
+    doc.rect(0, 0, pageWidth, pageHeight, 'F');
+
+    // Outer Border (Gold Neon)
+    doc.setDrawColor(227, 179, 65);
+    doc.setLineWidth(2.5);
+    doc.rect(8, 8, pageWidth - 16, pageHeight - 16);
+
+    // Inner Delicate Border
+    doc.setDrawColor(56, 189, 248); // Cyan
+    doc.setLineWidth(0.6);
+    doc.rect(12, 12, pageWidth - 24, pageHeight - 24);
+
+    // Top Header / Crest
+    doc.setTextColor(56, 189, 248);
+    doc.setFontSize(11);
+    doc.setFont("courier", "bold");
+    doc.text("CODE BUG HUNTER // ADVANCED INTERACTIVE DEBUGGING PLATFORM", pageWidth / 2, 28, { align: 'center' });
+
+    doc.setTextColor(227, 179, 65);
+    doc.setFontSize(28);
+    doc.setFont("helvetica", "bold");
+    doc.text("SERTIFIKAT PENCAPAIAN", pageWidth / 2, 42, { align: 'center' });
+
+    doc.setTextColor(148, 163, 184);
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "normal");
+    doc.text("Sertifikat ini secara resmi diberikan atas kelulusan evaluasi debugging interaktif kepada:", pageWidth / 2, 56, { align: 'center' });
+
+    // Recipient Name
+    const recipientName = (currentUser.username || "HUNTER DEVELOPER").toUpperCase();
+    doc.setTextColor(248, 250, 252);
+    doc.setFontSize(32);
+    doc.setFont("helvetica", "bold");
+    doc.text(recipientName, pageWidth / 2, 74, { align: 'center' });
+
+    // Decorative line under name
+    doc.setDrawColor(227, 179, 65);
+    doc.setLineWidth(1);
+    doc.line(75, 78, pageWidth - 75, 78);
+
+    // Description text
+    const langDisplay = selectedLang ? selectedLang.toUpperCase() : "MULTI-BAHASA";
+    const lvlDisplay = selectedLevel ? selectedLevel.toUpperCase() : "STANDARD";
+    const badge = document.getElementById('badge-title') ? document.getElementById('badge-title').innerText : 'Bug Hunter';
+    const finalScore = document.getElementById('final-score') ? document.getElementById('final-score').innerText : score;
+
+    doc.setTextColor(203, 213, 225);
+    doc.setFontSize(13);
+    doc.setFont("helvetica", "normal");
+    const desc = `Telah membuktikan kecakapan dalam mendeteksi dan memperbaiki bug logika, sintaksis,\ndan runtime pada simulasi pemrograman ${langDisplay} tingkat ${lvlDisplay}.`;
+    doc.text(desc, pageWidth / 2, 92, { align: 'center', lineHeightFactor: 1.4 });
+
+    // Predikat Box
+    doc.setFillColor(15, 23, 42);
+    doc.roundedRect(60, 110, pageWidth - 120, 26, 3, 3, 'F');
+    doc.setDrawColor(56, 189, 248);
+    doc.setLineWidth(0.5);
+    doc.roundedRect(60, 110, pageWidth - 120, 26, 3, 3, 'S');
+
+    doc.setTextColor(227, 179, 65);
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text(`PREDIKAT PENGHARGAAN: ${badge.toUpperCase()}`, pageWidth / 2, 120, { align: 'center' });
+
+    doc.setTextColor(52, 211, 153);
+    doc.setFontSize(11);
+    doc.text(`TOTAL SKOR AKHIR: ${finalScore} POIN`, pageWidth / 2, 128, { align: 'center' });
+
+    // Signatures & Metadata
+    const today = new Date();
+    const dateStr = today.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    const certId = `CBH-${today.getFullYear()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+
+    // Left metadata: Verification ID
+    doc.setTextColor(100, 116, 139);
+    doc.setFontSize(9);
+    doc.setFont("courier", "normal");
+    doc.text(`KODE VERIFIKASI: ${certId}`, 20, 170);
+    doc.text(`STATUS EVALUASI: VERIFIED & RECORDED`, 20, 176);
+    doc.text(`TERBIT PADA: ${dateStr}`, 20, 182);
+
+    // Right Signature / Stamp
+    doc.setTextColor(248, 250, 252);
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.text("DEWAN EVALUATOR", pageWidth - 55, 168, { align: 'center' });
+    doc.setDrawColor(100, 116, 139);
+    doc.setLineWidth(0.5);
+    doc.line(pageWidth - 85, 175, pageWidth - 25, 175);
+    doc.setTextColor(56, 189, 248);
+    doc.setFontSize(9);
+    doc.text("Code Bug Hunter Core System", pageWidth - 55, 181, { align: 'center' });
+
+    // Save PDF
+    const filename = `Sertifikat_${recipientName.replace(/\s+/g, '_')}_CodeBugHunter.pdf`;
+    doc.save(filename);
+    showToast("Sertifikat berhasil diunduh!", "success");
 }

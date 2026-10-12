@@ -2,11 +2,11 @@ const express = require('express');
 const mysql = require('mysql2');
 const path = require('path');
 const cors = require('cors');
-const bcrypt = require('bcryptjs'); // Menggunakan bcryptjs yang aman untuk Windows
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 const JWT_SECRET = process.env.JWT_SECRET || 'super_rahasia_hunter_123';
 
@@ -14,32 +14,43 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// FIX Vercel URL stripping: Gunakan parameter query dari vercel.json
+// FIX Vercel URL stripping: Gunakan parameter query dari vercel.json jika ada
 app.use((req, res, next) => {
     if (req.query.api_route) {
-        // Hapus query parameter dari URL agar tidak mengganggu route regex Express
         req.url = '/api/' + req.query.api_route;
         delete req.query.api_route;
     }
     next();
 });
 
-const db = mysql.createConnection({
+// TiDB Connection Pool (Serverless-Ready)
+const db = mysql.createPool({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
-    port: process.env.DB_PORT || 4000,
+    port: Number(process.env.DB_PORT) || 4000,
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 10000,
     ssl: {
         rejectUnauthorized: true
     }
 });
 
-db.connect((err) => {
-    if (err) console.error("Database connection failed:", err);
-    else console.log('✅ Terhubung ke Database MySQL Code Bug Hunter!');
+// Test connection pool
+db.getConnection((err, conn) => {
+    if (err) {
+        console.error("⚠️ TiDB Database Connection Warning:", err.message);
+    } else {
+        console.log('✅ Terhubung ke Database MySQL/TiDB Code Bug Hunter via Connection Pool!');
+        conn.release();
+    }
 });
 
+// Middleware Autentikasi JWT
 const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
@@ -53,21 +64,34 @@ const authenticateToken = (req, res, next) => {
     });
 };
 
+// Health Check Endpoint
+app.get('/api/health', (req, res) => {
+    db.query('SELECT 1', (err) => {
+        if (err) return res.status(500).json({ status: 'degraded', database: 'disconnected', error: err.message });
+        res.status(200).json({ status: 'healthy', database: 'connected', timestamp: new Date().toISOString() });
+    });
+});
+
 // --- API AUTHENTICATION ---
 app.post('/api/register', (req, res) => {
     const { username, email, password, role } = req.body;
-    const checkQuery = 'SELECT * FROM users WHERE username = ? OR email = ?';
+    if (!username || !email || !password || !role) {
+        return res.status(400).json({ message: 'Semua field wajib diisi!' });
+    }
+
+    const checkQuery = 'SELECT id FROM users WHERE username = ? OR email = ? LIMIT 1';
     
-    db.query(checkQuery, [username, email], async (err, results) => {
-        if (err) return res.status(500).json({ message: 'Database error' });
-        if (results.length > 0) return res.status(400).json({ message: 'Username/Email sudah terdaftar!' });
+    db.query(checkQuery, [username.trim(), email.trim().toLowerCase()], async (err, results) => {
+        if (err) return res.status(500).json({ message: 'Database error: ' + err.message });
+        if (results.length > 0) return res.status(400).json({ message: 'Username atau Email sudah terdaftar!' });
         
         try {
             const hashedPassword = await bcrypt.hash(password, 10);
+            const userRole = role === 'guru' ? 'guru' : 'siswa';
             
             const insertQuery = 'INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)';
-            db.query(insertQuery, [username, email, hashedPassword, role], (err, result) => {
-                if (err) return res.status(500).json({ message: 'Gagal mendaftar' });
+            db.query(insertQuery, [username.trim(), email.trim().toLowerCase(), hashedPassword, userRole], (err, result) => {
+                if (err) return res.status(500).json({ message: 'Gagal mendaftar: ' + err.message });
                 res.status(201).json({ message: 'Registrasi Berhasil! Silakan login.' });
             });
         } catch (error) {
@@ -78,10 +102,14 @@ app.post('/api/register', (req, res) => {
 
 app.post('/api/login', (req, res) => {
     const { username, password } = req.body;
-    const sql = 'SELECT * FROM users WHERE username = ?';
+    if (!username || !password) {
+        return res.status(400).json({ message: 'Username dan Password wajib diisi!' });
+    }
+
+    const sql = 'SELECT * FROM users WHERE username = ? LIMIT 1';
     
-    db.query(sql, [username], async (err, results) => {
-        if (err) return res.status(500).json({ message: 'Database error' });
+    db.query(sql, [username.trim()], async (err, results) => {
+        if (err) return res.status(500).json({ message: 'Database error: ' + err.message });
         
         if (results.length > 0) {
             const user = results[0];
@@ -108,11 +136,19 @@ app.post('/api/login', (req, res) => {
 // --- API GAMEPLAY (SISWA) ---
 app.get('/api/questions', authenticateToken, (req, res) => {
     const { lang, level } = req.query;
+    if (!lang || !level) {
+        return res.status(400).json({ message: 'Parameter bahasa dan level wajib dipilih!' });
+    }
+
     const sql = 'SELECT id, language, level, code_lines, hint_text FROM questions WHERE language = ? AND level = ? ORDER BY RAND() LIMIT 10';
     db.query(sql, [lang, level], (err, results) => {
-        if (err) return res.status(500).json({ message: 'Database error' });
+        if (err) return res.status(500).json({ message: 'Database error: ' + err.message });
         const questions = results.map(q => {
-            try { q.code_lines = JSON.parse(q.code_lines); } catch(e) { q.code_lines = []; }
+            try { 
+                q.code_lines = typeof q.code_lines === 'string' ? JSON.parse(q.code_lines) : q.code_lines; 
+            } catch(e) { 
+                q.code_lines = []; 
+            }
             return q;
         });
         res.status(200).json(questions);
@@ -123,17 +159,19 @@ app.post('/api/answer', authenticateToken, (req, res) => {
     const { question_id, guessed_line, guessed_error_type, time_left, hint_used, attempt_count } = req.body;
     const user_id = req.user.id;
 
-    const sql = 'SELECT * FROM questions WHERE id = ?';
+    const sql = 'SELECT * FROM questions WHERE id = ? LIMIT 1';
     db.query(sql, [question_id], (err, results) => {
-        if (err || results.length === 0) return res.status(500).json({ message: 'Soal tidak ditemukan' });
+        if (err || results.length === 0) return res.status(404).json({ message: 'Soal tidak ditemukan' });
         
         const question = results[0];
         let isCorrectLine = (guessed_line === question.bug_index);
         
-        if (guessed_error_type === null) {
+        // Mode 1: Verifikasi baris klik
+        if (guessed_error_type === null || guessed_error_type === undefined) {
             return res.status(200).json({ is_correct_line: isCorrectLine });
         }
 
+        // Mode 2: Verifikasi tipe error
         let isFullyCorrect = isCorrectLine && (guessed_error_type === question.error_type);
         let earnedPoints = 0;
         
@@ -147,13 +185,13 @@ app.post('/api/answer', authenticateToken, (req, res) => {
             
             let speedBonus = 0;
             if (attempt_count === 1) {
-                speedBonus = time_left;
+                speedBonus = Math.max(0, Number(time_left) || 0);
             }
             earnedPoints = baseScore + speedBonus;
         }
 
         const historySql = 'INSERT INTO student_history (user_id, question_id, is_correct, attempts_used) VALUES (?, ?, ?, ?)';
-        db.query(historySql, [user_id, question_id, isFullyCorrect ? 1 : 0, attempt_count], () => {
+        db.query(historySql, [user_id, question_id, isFullyCorrect ? 1 : 0, attempt_count || 1], () => {
             res.status(200).json({
                 is_correct: isFullyCorrect,
                 earned_points: earnedPoints,
@@ -170,8 +208,8 @@ app.post('/api/save-score', authenticateToken, (req, res) => {
     const user_id = req.user.id; 
     
     const sql = 'INSERT INTO leaderboard (user_id, total_score, badge_title) VALUES (?, ?, ?)';
-    db.query(sql, [user_id, score, badge], (err, result) => {
-        if (err) return res.status(500).json({ message: 'Gagal menyimpan skor' });
+    db.query(sql, [user_id, score, badge || 'Junior Trainee'], (err) => {
+        if (err) return res.status(500).json({ message: 'Gagal menyimpan skor: ' + err.message });
         res.status(200).json({ message: 'Skor berhasil disimpan!' });
     });
 });
@@ -188,47 +226,51 @@ app.get('/api/leaderboard', (req, res) => {
         LIMIT 10
     `;
     db.query(sql, (err, results) => {
-        if (err) return res.status(500).json({ message: 'Database error' });
+        if (err) return res.status(500).json({ message: 'Database error: ' + err.message });
         res.status(200).json(results);
     });
 });
 
 // --- API CRUD GURU (MANAJEMEN SOAL) ---
 app.get('/api/admin/questions', authenticateToken, (req, res) => {
-    if (req.user.role !== 'guru') return res.status(403).json({ message: 'Akses ditolak' });
+    if (req.user.role !== 'guru') return res.status(403).json({ message: 'Akses ditolak: Khusus akun Guru' });
     const { lang, level } = req.query;
     let sql = 'SELECT * FROM questions';
     let params = [];
-    if (lang && level) { sql += ' WHERE language = ? AND level = ?'; params = [lang, level]; }
-    sql += ' ORDER BY id ASC';
+    if (lang && level) { 
+        sql += ' WHERE language = ? AND level = ?'; 
+        params = [lang, level]; 
+    }
+    sql += ' ORDER BY id DESC';
     db.query(sql, params, (err, results) => {
-        if (err) return res.status(500).json({ message: 'Database error' });
+        if (err) return res.status(500).json({ message: 'Database error: ' + err.message });
         res.status(200).json(results);
     });
 });
 
 app.post('/api/admin/questions', authenticateToken, (req, res) => {
-    if (req.user.role !== 'guru') return res.status(403).json({ message: 'Akses ditolak' });
+    if (req.user.role !== 'guru') return res.status(403).json({ message: 'Akses ditolak: Khusus akun Guru' });
     const { language, level, code_lines, bug_index, error_type, wrong_snippet, right_snippet, explanation, hint_text, created_by } = req.body;
     
     if (!language || !level || !error_type || !code_lines || code_lines.length === 0) {
         return res.status(400).json({ message: 'Gagal: Data soal tidak lengkap!' });
     }
 
-    if (bug_index < 0 || bug_index >= code_lines.length) {
-        return res.status(400).json({ message: 'Gagal: Index bug tidak sesuai!' });
+    const bugIdx = parseInt(bug_index);
+    if (isNaN(bugIdx) || bugIdx < 0 || bugIdx >= code_lines.length) {
+        return res.status(400).json({ message: 'Gagal: Index baris bug tidak valid!' });
     }
 
     const code_lines_json = JSON.stringify(code_lines);
     const sql = `INSERT INTO questions (language, level, code_lines, bug_index, error_type, wrong_snippet, right_snippet, explanation, hint_text, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-    db.query(sql, [language, level, code_lines_json, bug_index, error_type, wrong_snippet, right_snippet, explanation, hint_text, created_by], (err, result) => {
-        if (err) return res.status(500).json({ message: 'Gagal menambah soal' });
+    db.query(sql, [language, level, code_lines_json, bugIdx, error_type, wrong_snippet, right_snippet, explanation, hint_text, created_by || req.user.id], (err) => {
+        if (err) return res.status(500).json({ message: 'Gagal menambah soal: ' + err.message });
         res.status(201).json({ message: 'Soal berhasil ditambahkan!' });
     });
 });
 
 app.put('/api/admin/questions/:id', authenticateToken, (req, res) => {
-    if (req.user.role !== 'guru') return res.status(403).json({ message: 'Akses ditolak' });
+    if (req.user.role !== 'guru') return res.status(403).json({ message: 'Akses ditolak: Khusus akun Guru' });
     const { id } = req.params;
     const { language, level, code_lines, bug_index, error_type, wrong_snippet, right_snippet, explanation, hint_text } = req.body;
     
@@ -236,39 +278,42 @@ app.put('/api/admin/questions/:id', authenticateToken, (req, res) => {
         return res.status(400).json({ message: 'Gagal: Data soal tidak lengkap!' });
     }
 
-    if (bug_index < 0 || bug_index >= code_lines.length) {
-        return res.status(400).json({ message: 'Gagal: Index bug tidak sesuai!' });
+    const bugIdx = parseInt(bug_index);
+    if (isNaN(bugIdx) || bugIdx < 0 || bugIdx >= code_lines.length) {
+        return res.status(400).json({ message: 'Gagal: Index baris bug tidak valid!' });
     }
 
     const code_lines_json = JSON.stringify(code_lines);
     const sql = `UPDATE questions SET language=?, level=?, code_lines=?, bug_index=?, error_type=?, wrong_snippet=?, right_snippet=?, explanation=?, hint_text=? WHERE id=?`;
-    db.query(sql, [language, level, code_lines_json, bug_index, error_type, wrong_snippet, right_snippet, explanation, hint_text, id], (err, result) => {
-        if (err) return res.status(500).json({ message: 'Gagal mengedit soal' });
-        res.status(200).json({ message: 'Soal berhasil diupdate!' });
+    db.query(sql, [language, level, code_lines_json, bugIdx, error_type, wrong_snippet, right_snippet, explanation, hint_text, id], (err) => {
+        if (err) return res.status(500).json({ message: 'Gagal mengedit soal: ' + err.message });
+        res.status(200).json({ message: 'Soal berhasil diperbarui!' });
     });
 });
 
 app.delete('/api/admin/questions/:id', authenticateToken, (req, res) => {
-    if (req.user.role !== 'guru') return res.status(403).json({ message: 'Akses ditolak' });
+    if (req.user.role !== 'guru') return res.status(403).json({ message: 'Akses ditolak: Khusus akun Guru' });
     const { id } = req.params;
     const sql = 'DELETE FROM questions WHERE id=?';
-    db.query(sql, [id], (err, result) => {
-        if (err) return res.status(500).json({ message: 'Gagal menghapus soal' });
+    db.query(sql, [id], (err) => {
+        if (err) return res.status(500).json({ message: 'Gagal menghapus soal: ' + err.message });
         res.status(200).json({ message: 'Soal berhasil dihapus!' });
     });
 });
 
 app.post('/api/admin/questions/bulk', authenticateToken, (req, res) => {
-    if (req.user.role !== 'guru') return res.status(403).json({ message: 'Akses ditolak' });
+    if (req.user.role !== 'guru') return res.status(403).json({ message: 'Akses ditolak: Khusus akun Guru' });
     const questions = req.body;
-    if (!Array.isArray(questions) || questions.length === 0) return res.status(400).json({ message: 'Data tidak valid' });
+    if (!Array.isArray(questions) || questions.length === 0) return res.status(400).json({ message: 'Data format array tidak valid!' });
+    
     const sql = `INSERT INTO questions (language, level, code_lines, bug_index, error_type, wrong_snippet, right_snippet, explanation, hint_text, created_by) VALUES ?`;
     const values = questions.map(q => [
         q.language, q.level, typeof q.code_lines === 'string' ? q.code_lines : JSON.stringify(q.code_lines),
-        q.bug_index, q.error_type, q.wrong_snippet, q.right_snippet, q.explanation, q.hint_text, q.created_by || null
+        parseInt(q.bug_index) || 0, q.error_type, q.wrong_snippet || '', q.right_snippet || '', q.explanation || '', q.hint_text || '', req.user.id
     ]);
+    
     db.query(sql, [values], (err, result) => {
-        if (err) return res.status(500).json({ message: 'Gagal mengimpor soal' });
+        if (err) return res.status(500).json({ message: 'Gagal mengimpor soal: ' + err.message });
         res.status(201).json({ message: `${result.affectedRows} soal berhasil diimpor!` });
     });
 });
@@ -279,8 +324,8 @@ app.get('/api/student/stats/:userId', authenticateToken, (req, res) => {
     let sql = `
         SELECT 
             COUNT(sh.id) as total_soal, 
-            SUM(sh.is_correct) as total_benar, 
-            SUM(sh.attempts_used) as total_gagal 
+            COALESCE(SUM(sh.is_correct), 0) as total_benar, 
+            COALESCE(SUM(sh.attempts_used), 0) as total_gagal 
         FROM student_history sh
         JOIN questions q ON sh.question_id = q.id
         WHERE sh.user_id = ?
@@ -290,22 +335,25 @@ app.get('/api/student/stats/:userId', authenticateToken, (req, res) => {
     if (level) { sql += ' AND q.level = ?'; params.push(level); }
     
     db.query(sql, params, (err, results) => {
-        if (err) return res.status(500).json({ message: 'Database error' });
-        const stats = results[0];
-        const akurasi = stats.total_soal > 0 ? Math.round((stats.total_benar / stats.total_soal) * 100) : 0;
-        res.status(200).json({ total: stats.total_soal || 0, benar: stats.total_benar || 0, gagal: stats.total_gagal || 0, akurasi });
+        if (err) return res.status(500).json({ message: 'Database error: ' + err.message });
+        const stats = results[0] || {};
+        const total = stats.total_soal || 0;
+        const benar = stats.total_benar || 0;
+        const gagal = stats.total_gagal || 0;
+        const akurasi = total > 0 ? Math.round((benar / total) * 100) : 0;
+        res.status(200).json({ total, benar, gagal, akurasi });
     });
 });
 
 // --- API ANALITIK EVALUASI GURU ---
 app.get('/api/admin/analytics', authenticateToken, (req, res) => {
-    if (req.user.role !== 'guru') return res.status(403).json({ message: 'Akses ditolak' });
+    if (req.user.role !== 'guru') return res.status(403).json({ message: 'Akses ditolak: Khusus akun Guru' });
     const { lang, level } = req.query;
     let sql = `
         SELECT q.id, q.language, q.level, q.error_type, q.bug_index,
                COUNT(sh.id) as total_dijawab,
-               SUM(sh.is_correct) as total_benar,
-               SUM(sh.attempts_used) as total_gagal
+               COALESCE(SUM(sh.is_correct), 0) as total_benar,
+               COALESCE(SUM(sh.attempts_used), 0) as total_gagal
         FROM questions q
         JOIN student_history sh ON q.id = sh.question_id
     `;
@@ -318,9 +366,16 @@ app.get('/api/admin/analytics', authenticateToken, (req, res) => {
     sql += ` GROUP BY q.id ORDER BY total_gagal DESC LIMIT 10`;
     
     db.query(sql, params, (err, results) => {
-        if (err) return res.status(500).json({ message: 'Database error' });
+        if (err) return res.status(500).json({ message: 'Database error: ' + err.message });
         res.status(200).json(results);
     });
 });
+
+// Local dev server listener
+if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+    app.listen(PORT, () => {
+        console.log(`🚀 Code Bug Hunter Server berjalan di port ${PORT}`);
+    });
+}
 
 module.exports = app;

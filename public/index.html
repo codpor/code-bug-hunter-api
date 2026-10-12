@@ -3,374 +3,765 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Code Bug Hunter</title>
-    <link rel="icon" type="image/png" href="favicon.png?>99">
+    <title>Code Bug Hunter Pro - Platform Debugging Interaktif</title>
+    <meta name="description" content="Simulasi debugging interaktif arcade untuk melatih kemampuan menemukan dan memperbaiki bug pemrograman secara real-time.">
+    <link rel="icon" type="image/png" href="favicon.png">
+    
+    <!-- Google Fonts: JetBrains Mono (Code/Terminal) & Plus Jakarta Sans (UI) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
-    <!-- TAMBAHAN: PrismJS untuk Syntax Highlighting -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-twilight.min.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- PrismJS Syntax Highlighting (Dark Theme) -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <!-- jsPDF UMD Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-    <audio id="bgm" src="bgm.mp3" loop></audio>
-    <audio id="sfx-click" src="click.mp3"></audio>
-    <audio id="sfx-wrong" src="wrong.mp3"></audio>
-    <audio id="sfx-correct" src="correct.mp3"></audio>
+    <!-- Audio Elements -->
+    <audio id="bgm" src="bgm.mp3" loop preload="auto"></audio>
+    <audio id="sfx-click" src="click.mp3" preload="auto"></audio>
+    <audio id="sfx-wrong" src="wrong.mp3" preload="auto"></audio>
+    <audio id="sfx-correct" src="correct.mp3" preload="auto"></audio>
 
-    <div id="game-container">
-        
-        <div id="frame-landing" class="frame active">
-            <h1 class="main-title">CODE BUG HUNTER</h1>
-            <p class="subtitle">Platform Belajar Debugging Interaktif</p>
-            <div class="features-box">
-                <p>✔️ Simulasi Editor Arcade</p>
-                <p>✔️ Pembahasan Real-time</p>
-                <p>✔️ Sistem Peringkat & Skor</p>
+    <!-- Top Navigation Header -->
+    <header id="main-header">
+        <div class="header-container">
+            <div class="header-brand" onclick="goToFrame(currentUser.id ? (currentUser.role === 'guru' ? 'frame-guru' : 'frame-01') : 'frame-landing')">
+                <span class="brand-icon">⚡</span>
+                <span class="brand-text">CODE BUG HUNTER</span>
+                <span class="brand-badge">PRO v2.0</span>
             </div>
-            <button class="action-btn" onclick="playSFX(); goToFrame('frame-login')">MULAI PETUALANGAN</button>
-        </div>
 
-        <div id="frame-login" class="frame">
-            <h2 style="color: #58a6ff;">SYSTEM LOGIN</h2>
-            <form id="login-form" class="auth-form" onsubmit="event.preventDefault(); simulateLogin();">
-                <input type="text" id="login-user" class="terminal-input" placeholder="Username" required>
-                <input type="password" id="login-pass" class="terminal-input" placeholder="Password" required>
-                <button type="submit" class="action-btn" style="width: 100%; margin-top: 20px;">MASUK</button>
-            </form>
-            <p style="margin-top: 20px; font-size: 14px;">Belum punya akses? <a href="#" onclick="playSFX(); goToFrame('frame-register')" style="color: #3fb950;">Daftar di sini</a></p>
-            <button class="secondary-btn" onclick="playSFX(); goToFrame('frame-landing')">KEMBALI</button>
-        </div>
+            <div class="header-actions">
+                <!-- Audio Controls -->
+                <button id="btn-toggle-bgm" class="btn-icon" onclick="toggleBGM()" title="Aktif/Nonaktifkan Musik">
+                    🎵 <span class="audio-label">BGM</span>
+                </button>
+                <button id="btn-toggle-sfx" class="btn-icon" onclick="toggleSFX()" title="Aktif/Nonaktifkan Efek Suara">
+                    🔔 <span class="audio-label">SFX</span>
+                </button>
 
-        <div id="frame-register" class="frame">
-            <h2 style="color: #e3b341;">REGISTRASI HUNTER BARU</h2>
-            <form id="register-form" class="auth-form" onsubmit="event.preventDefault(); simulateRegister();">
-                <input type="text" id="reg-user" class="terminal-input" placeholder="Username Baru" required>
-                <input type="email" id="reg-email" class="terminal-input" placeholder="Alamat Email" required>
-                <input type="password" id="reg-pass" class="terminal-input" placeholder="Password" required>
-                <select id="reg-role" class="terminal-input" required>
-                    <option value="" disabled selected>-- Pilih Peran --</option>
-                    <option value="siswa">Siswa / Mahasiswa</option>
-                    <option value="guru">Guru / Dosen</option>
-                </select>
-                <button type="submit" class="action-btn" style="width: 100%; margin-top: 20px; background-color: #e3b341;">DAFTAR SEKARANG</button>
-            </form>
-            <p style="margin-top: 20px; font-size: 14px;">Sudah punya akun? <a href="#" onclick="playSFX(); goToFrame('frame-login')" style="color: #58a6ff;">Login di sini</a></p>
-        </div>
-
-        <div id="frame-guru" class="frame" style="padding: 20px; align-items: flex-start; justify-content: flex-start;">
-            
-            <div style="display: flex; justify-content: space-between; width: 100%; align-items: center; border-bottom: 2px solid #3fb950; padding-bottom: 10px; margin-bottom: 20px;">
-                <h2 style="margin: 0; color: #3fb950;">DASHBOARD GURU</h2>
-                <div>
-                    <span style="color: #c9d1d9; margin-right: 15px;">Halo, <b id="guru-name">Guru</b>!</span>
-                    <button class="secondary-btn" style="padding: 8px 15px; border-color: #f85149; color: #f85149; margin: 0;" onclick="playSFX(); logOut()">LOGOUT</button>
+                <!-- User Session Badge -->
+                <div id="nav-user-badge" class="nav-user-badge" style="display: none;">
+                    <div class="user-avatar-circle">👤</div>
+                    <div class="user-info-text">
+                        <span id="nav-username" class="user-name-text">HUNTER</span>
+                        <span id="nav-role" class="role-chip role-siswa">SISWA</span>
+                    </div>
                 </div>
-            </div>
-            
-            <div style="width: 100%; display: flex; gap: 10px; margin-bottom: 20px; align-items: center; background: #161b22; padding: 15px; border-radius: 5px; border: 1px solid #30363d; box-sizing: border-box; flex-wrap: wrap;">
-                <select id="filter-lang" class="terminal-input" style="flex: 1; padding: 10px; margin: 0; min-width: 120px;">
-                    <option value="" disabled selected>-- Bahasa --</option>
-                    <option value="python">Python</option>
-                    <option value="javascript">JavaScript</option>
-                    <option value="java">Java</option>
-                    <option value="php">PHP</option>
-                    <option value="cpp">C++</option>
-                    <option value="css">CSS</option>
-                </select>
-                <select id="filter-lvl" class="terminal-input" style="flex: 1; padding: 10px; margin: 0; min-width: 120px;">
-                    <option value="" disabled selected>-- Level --</option>
-                    <option value="mudah">Mudah</option>
-                    <option value="sedang">Sedang</option>
-                    <option value="sulit">Sulit</option>
-                </select>
-                <button class="action-btn" style="padding: 10px 15px;" onclick="playSFX(); fetchAdminQuestions()">TAMPILKAN</button>
-                
-                <button class="action-btn" style="padding: 10px 15px; background-color: #58a6ff;" onclick="playSFX(); openSoalModal()">+ TAMBAH</button>
-                <button class="action-btn" style="padding: 10px 15px; background-color: #e3b341; color: #000;" onclick="playSFX(); fetchTeacherAnalytics()">📊 ANALITIK KELAS</button>
-                
-                <div style="border-left: 2px solid #30363d; height: 35px; margin: 0 5px;"></div>
 
-                <button class="secondary-btn" style="padding: 10px 15px; border-color: #58a6ff; color: #58a6ff; margin: 0;" title="Unduh File Backup" onclick="playSFX(); exportSoal()">⬇️ BACKUP SOAL</button>
-                <button class="secondary-btn" style="padding: 10px 15px; border-color: #e3b341; color: #e3b341; margin: 0;" title="Pulihkan File Backup" onclick="playSFX(); document.getElementById('import-file').click()">⬆️ RESTORE SOAL</button>
-                <input type="file" id="import-file" style="display: none;" accept=".json" onchange="importSoal(event)">
-            </div>
-
-            <div id="admin-soal-list" style="width: 100%; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; padding-right: 10px; flex: 1;">
-                <p style="color: #8b949e; text-align: center; margin-top: 50px;">Silakan pilih bahasa dan tingkatan di atas untuk memuat daftar soal.</p>
+                <button id="nav-btn-logout" class="btn-logout-nav" style="display: none;" onclick="playSFX(); logOut()" title="Keluar">
+                    LOGOUT
+                </button>
             </div>
         </div>
+    </header>
 
-        <div id="overlay-guru-form" class="overlay">
-            <div class="popup-box" style="width: 85%; max-height: 90vh; overflow-y: auto; text-align: left;">
-                <h2 id="modal-soal-title" style="color: #58a6ff; margin-top: 0;">TAMBAH SOAL</h2>
-                <form id="form-soal" onsubmit="event.preventDefault(); saveSoal();">
-                    <input type="hidden" id="soal-id">
+    <!-- Main Content Viewport -->
+    <main id="app-main-viewport">
+        <div id="game-container">
+            
+            <!-- 1. LANDING FRAME -->
+            <div id="frame-landing" class="frame active">
+                <div class="landing-hero">
+                    <div class="cyber-radar-badge">SIMULASI DEBUGGING ARCADE</div>
+                    <h1 class="main-title">CODE BUG HUNTER</h1>
+                    <p class="subtitle">Tingkatkan insting mendeteksi bug kode secara real-time melalui arena interaktif layaknya game arcade profesional.</p>
                     
-                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                        <div style="flex: 1;">
-                            <label>Bahasa:</label>
-                            <select id="soal-lang" class="terminal-input" style="width: 100%; padding: 10px;" required>
-                                <option value="python">Python</option>
-                                <option value="javascript">JavaScript</option>
-                                <option value="java">Java</option>
-                                <option value="php">PHP</option>
-                                <option value="cpp">C++</option>
-                                <option value="css">CSS</option>
+                    <div class="feature-cards-grid">
+                        <div class="feature-card">
+                            <div class="card-icon">🎯</div>
+                            <h3>Editor Simulator</h3>
+                            <p>Deteksi baris yang salah langsung di dalam simulator editor kode multi-bahasa.</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="card-icon">⚡</div>
+                            <h3>Uji Tipe Error</h3>
+                            <p>Identifikasi apakah bug merupakan Syntax Error, Logic Error, atau Runtime Error.</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="card-icon">🏆</div>
+                            <h3>Sertifikat Resmi</h3>
+                            <p>Kumpulkan poin dan unduh sertifikat pencapaian resmi kelulusan debugging Anda.</p>
+                        </div>
+                    </div>
+
+                    <div class="landing-cta-group">
+                        <button class="action-btn cta-large" onclick="playSFX(); goToFrame('frame-login')">
+                            MULAI MISI SEKARANG ➜
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. LOGIN FRAME -->
+            <div id="frame-login" class="frame">
+                <div class="auth-card">
+                    <div class="card-header-icon">🔐</div>
+                    <h2 class="auth-title">SYSTEM LOGIN</h2>
+                    <p class="auth-subtitle">Masukkan identitas akun untuk membuka akses terminal.</p>
+
+                    <form id="login-form" class="auth-form" onsubmit="event.preventDefault(); simulateLogin();">
+                        <div class="input-group">
+                            <label for="login-user">Username</label>
+                            <input type="text" id="login-user" class="terminal-input" placeholder="Masukkan username" required autocomplete="username">
+                        </div>
+                        <div class="input-group">
+                            <label for="login-pass">Password</label>
+                            <input type="password" id="login-pass" class="terminal-input" placeholder="Masukkan password" required autocomplete="current-password">
+                        </div>
+                        <button type="submit" class="action-btn w-100 mt-3">MASUK KE TERMINAL</button>
+                    </form>
+
+                    <div class="auth-footer">
+                        <p>Belum memiliki akses? <a href="#" onclick="playSFX(); goToFrame('frame-register')" class="link-highlight">Daftar Akun Baru</a></p>
+                        <button class="secondary-btn btn-sm" onclick="playSFX(); goToFrame('frame-landing')">← KEMBALI</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. REGISTER FRAME -->
+            <div id="frame-register" class="frame">
+                <div class="auth-card">
+                    <div class="card-header-icon">🚀</div>
+                    <h2 class="auth-title" style="color: #e3b341;">REGISTRASI AKUN</h2>
+                    <p class="auth-subtitle">Daftarkan akun sebagai Siswa untuk bermain atau Guru untuk kelola soal.</p>
+
+                    <form id="register-form" class="auth-form" onsubmit="event.preventDefault(); simulateRegister();">
+                        <div class="input-group">
+                            <label for="reg-user">Username Baru</label>
+                            <input type="text" id="reg-user" class="terminal-input" placeholder="contoh: arif_hunter" required autocomplete="username">
+                        </div>
+                        <div class="input-group">
+                            <label for="reg-email">Alamat Email</label>
+                            <input type="email" id="reg-email" class="terminal-input" placeholder="nama@email.com" required autocomplete="email">
+                        </div>
+                        <div class="input-group">
+                            <label for="reg-pass">Password</label>
+                            <input type="password" id="reg-pass" class="terminal-input" placeholder="Minimal 5 karakter" required autocomplete="new-password">
+                        </div>
+                        <div class="input-group">
+                            <label for="reg-role">Peran Akun</label>
+                            <select id="reg-role" class="terminal-input" required>
+                                <option value="" disabled selected>-- Pilih Peran Akun --</option>
+                                <option value="siswa">Siswa / Mahasiswa (Hunter)</option>
+                                <option value="guru">Guru / Dosen (Evaluator)</option>
                             </select>
                         </div>
-                        <div style="flex: 1;">
-                            <label>Level:</label>
-                            <select id="soal-lvl" class="terminal-input" style="width: 100%; padding: 10px;" required>
-                                <option value="mudah">Mudah</option><option value="sedang">Sedang</option><option value="sulit">Sulit</option>
-                            </select>
+                        <button type="submit" class="action-btn w-100 mt-3" style="background: linear-gradient(135deg, #e3b341, #f59e0b);">DAFTAR SEKARANG</button>
+                    </form>
+
+                    <div class="auth-footer">
+                        <p>Sudah punya akun terdaftar? <a href="#" onclick="playSFX(); goToFrame('frame-login')" class="link-highlight">Login di sini</a></p>
+                        <button class="secondary-btn btn-sm" onclick="playSFX(); goToFrame('frame-landing')">← KEMBALI</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. GURU DASHBOARD FRAME -->
+            <div id="frame-guru" class="frame">
+                <div class="guru-header-bar">
+                    <div>
+                        <h2 class="guru-title">PANEL EVALUATOR (GURU)</h2>
+                        <p class="guru-subtitle">Kelola bank soal pemrograman, import/export data, dan tinjau analitik kelas.</p>
+                    </div>
+                    <div class="guru-profile-box">
+                        <span>Halo, <b id="guru-name" class="text-highlight">GURU</b></span>
+                        <button class="secondary-btn btn-danger-soft btn-sm" onclick="playSFX(); logOut()">LOGOUT</button>
+                    </div>
+                </div>
+
+                <!-- Action & Filter Bar -->
+                <div class="filter-toolbar">
+                    <div class="filter-group">
+                        <select id="filter-lang" class="terminal-input select-clean">
+                            <option value="" disabled selected>-- Pilih Bahasa --</option>
+                            <option value="python">Python</option>
+                            <option value="javascript">JavaScript</option>
+                            <option value="java">Java</option>
+                            <option value="php">PHP</option>
+                            <option value="cpp">C++</option>
+                            <option value="css">CSS</option>
+                        </select>
+                        <select id="filter-lvl" class="terminal-input select-clean">
+                            <option value="" disabled selected>-- Pilih Level --</option>
+                            <option value="mudah">Mudah</option>
+                            <option value="sedang">Sedang</option>
+                            <option value="sulit">Sulit</option>
+                        </select>
+                        <button class="action-btn btn-compact" onclick="playSFX(); fetchAdminQuestions()">🔍 TAMPILKAN</button>
+                    </div>
+
+                    <div class="toolbar-divider"></div>
+
+                    <div class="actions-group">
+                        <button class="action-btn btn-compact btn-blue" onclick="playSFX(); openSoalModal()">+ TAMBAH SOAL</button>
+                        <button class="action-btn btn-compact btn-gold" onclick="playSFX(); fetchTeacherAnalytics()">📊 ANALITIK KELAS</button>
+                        <button class="secondary-btn btn-compact" onclick="playSFX(); exportSoal()" title="Unduh File Backup JSON">⬇️ BACKUP</button>
+                        <button class="secondary-btn btn-compact" onclick="playSFX(); document.getElementById('import-file').click()" title="Unggah File Backup JSON">⬆️ RESTORE</button>
+                        <input type="file" id="import-file" style="display: none;" accept=".json" onchange="importSoal(event)">
+                    </div>
+                </div>
+
+                <!-- Soal Cards Container -->
+                <div id="admin-soal-list" class="admin-soal-list">
+                    <div class="empty-placeholder">
+                        <div style="font-size: 40px; margin-bottom: 10px;">🔍</div>
+                        <p>Silakan pilih Bahasa dan Level di atas, lalu klik <b>Tampilkan</b> untuk memuat daftar soal.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODAL GURU: FORM SOAL -->
+            <div id="overlay-guru-form" class="overlay">
+                <div class="popup-box modal-large">
+                    <div class="modal-header">
+                        <h2 id="modal-soal-title" class="modal-title">TAMBAH SOAL BARU</h2>
+                        <button class="btn-close-modal" onclick="closeSoalModal()">✕</button>
+                    </div>
+                    
+                    <form id="form-soal" onsubmit="event.preventDefault(); saveSoal();">
+                        <input type="hidden" id="soal-id">
+                        
+                        <div class="form-row-3">
+                            <div class="form-control-col">
+                                <label>Bahasa Pemrograman:</label>
+                                <select id="soal-lang" class="terminal-input" required>
+                                    <option value="python">Python</option>
+                                    <option value="javascript">JavaScript</option>
+                                    <option value="java">Java</option>
+                                    <option value="php">PHP</option>
+                                    <option value="cpp">C++</option>
+                                    <option value="css">CSS</option>
+                                </select>
+                            </div>
+                            <div class="form-control-col">
+                                <label>Tingkat Kesulitan:</label>
+                                <select id="soal-lvl" class="terminal-input" required>
+                                    <option value="mudah">Mudah</option>
+                                    <option value="sedang">Sedang</option>
+                                    <option value="sulit">Sulit</option>
+                                </select>
+                            </div>
+                            <div class="form-control-col">
+                                <label>Jenis Error:</label>
+                                <select id="soal-err" class="terminal-input" required>
+                                    <option value="Syntax Error">Syntax Error</option>
+                                    <option value="Logic Error">Logic Error</option>
+                                    <option value="Runtime Error">Runtime Error</option>
+                                </select>
+                            </div>
                         </div>
-                        <div style="flex: 1;">
-                            <label>Tipe Error:</label>
-                            <select id="soal-err" class="terminal-input" style="width: 100%; padding: 10px;" required>
-                                <option value="Syntax Error">Syntax Error</option><option value="Logic Error">Logic Error</option><option value="Runtime Error">Runtime Error</option>
-                            </select>
+
+                        <div class="form-control-col mt-2">
+                            <label>Kode Program (Tiap baris dipisahkan dengan Enter):</label>
+                            <textarea id="soal-code" class="terminal-input code-textarea" rows="6" required placeholder="def fungsi():\n    return 'Hello World'"></textarea>
+                        </div>
+
+                        <div class="form-control-col mt-2">
+                            <label>Index Baris Bug (Mulai dari 0 untuk baris pertama):</label>
+                            <input type="number" id="soal-idx" class="terminal-input" required min="0" placeholder="0">
+                        </div>
+
+                        <div class="form-row-2 mt-2">
+                            <div class="form-control-col">
+                                <label>Potongan Kode Salah:</label>
+                                <input type="text" id="soal-wrong" class="terminal-input" required placeholder="hasil = hitung(10, 5">
+                            </div>
+                            <div class="form-control-col">
+                                <label>Potongan Kode Benar (Perbaikan):</label>
+                                <input type="text" id="soal-right" class="terminal-input" required placeholder="hasil = hitung(10, 5)">
+                            </div>
+                        </div>
+
+                        <div class="form-control-col mt-2">
+                            <label>Penjelasan Pembahasan (Review):</label>
+                            <textarea id="soal-exp" class="terminal-input" rows="3" required placeholder="Jelaskan alasan error terjadi dan cara solusinya..."></textarea>
+                        </div>
+
+                        <div class="form-control-col mt-2">
+                            <label>Teks Bantuan (Hint untuk Siswa):</label>
+                            <input type="text" id="soal-hint" class="terminal-input" required placeholder="Perhatikan tanda kurung penutup...">
+                        </div>
+
+                        <div class="modal-footer mt-4">
+                            <button type="button" class="secondary-btn" onclick="playSFX(); closeSoalModal()">BATAL</button>
+                            <button type="submit" class="action-btn">SIMPAN SOAL</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- MODAL GURU: ANALITIK KELAS -->
+            <div id="overlay-analytics" class="overlay">
+                <div class="popup-box modal-large">
+                    <div class="modal-header">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 24px;">📊</span>
+                            <h2 class="modal-title" style="color: #e3b341;">ANALITIK EVALUASI KELAS</h2>
+                        </div>
+                        <button class="btn-close-modal" onclick="document.getElementById('overlay-analytics').style.display='none'">✕</button>
+                    </div>
+
+                    <p style="color: #94a3b8; font-size: 14px; margin-bottom: 15px;">Daftar 10 Soal paling banyak menjebak siswa dengan tingkat kesalahan tertinggi.</p>
+                    
+                    <div class="filter-toolbar mb-3">
+                        <select id="analytics-lang" class="terminal-input select-clean" onchange="fetchTeacherAnalytics()">
+                            <option value="">Semua Bahasa</option>
+                            <option value="python">Python</option>
+                            <option value="javascript">JavaScript</option>
+                            <option value="java">Java</option>
+                            <option value="php">PHP</option>
+                            <option value="cpp">C++</option>
+                            <option value="css">CSS</option>
+                        </select>
+                        <select id="analytics-lvl" class="terminal-input select-clean" onchange="fetchTeacherAnalytics()">
+                            <option value="">Semua Level</option>
+                            <option value="mudah">Mudah</option>
+                            <option value="sedang">Sedang</option>
+                            <option value="sulit">Sulit</option>
+                        </select>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="leaderboard-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Bahasa</th>
+                                    <th>Level</th>
+                                    <th>Error Type</th>
+                                    <th>Total Percobaan</th>
+                                    <th>Total Gagal</th>
+                                    <th>Akurasi Siswa</th>
+                                </tr>
+                            </thead>
+                            <tbody id="analytics-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. STUDENT DASHBOARD (FRAME-01) -->
+            <div id="frame-01" class="frame">
+                <div class="dashboard-hero">
+                    <div class="welcome-chip">HUNTER TERMINAL READY</div>
+                    <h1 class="dashboard-greeting">Selamat Datang, <span id="display-username" class="text-highlight">HUNTER</span>!</h1>
+                    <p class="dashboard-sub">Siap mengasah kejelian melihat bug? Pilih misi atau pantau perkembangan belajarmu.</p>
+                    
+                    <div class="dashboard-menu-grid">
+                        <div class="menu-tile primary-tile" onclick="playSFX(); goToFrame('frame-03')">
+                            <div class="tile-icon">🎮</div>
+                            <h3>MULAI BERMAIN</h3>
+                            <p>Pilih bahasa pemrograman & taklukkan 10 misi simulasi bug.</p>
+                            <span class="tile-arrow">MAIN SEKARANG ➜</span>
+                        </div>
+
+                        <div class="menu-tile" onclick="playSFX(); showStudentStats()">
+                            <div class="tile-icon">📈</div>
+                            <h3>RAPOR SAYA</h3>
+                            <p>Pantau persentase akurasi & riwayat penyelesaian bug kodingmu.</p>
+                            <span class="tile-arrow">LIHAT STATISTIK ➜</span>
+                        </div>
+
+                        <div class="menu-tile" onclick="playSFX(); loadLeaderboard()">
+                            <div class="tile-icon">🏆</div>
+                            <h3>LEADERBOARD</h3>
+                            <p>Lihat peringkat Top 10 Hunter dengan perolehan skor tertinggi.</p>
+                            <span class="tile-arrow">PAPAN SKOR ➜</span>
+                        </div>
+
+                        <div class="menu-tile" onclick="playSFX(); goToFrame('frame-02')">
+                            <div class="tile-icon">📖</div>
+                            <h3>PANDUAN ATURAN</h3>
+                            <p>Pelajari aturan bonus waktu, penalti hint, dan sistem badge.</p>
+                            <span class="tile-arrow">BACA PANDUAN ➜</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6. STUDENT RAPOR (FRAME-RAPOR) -->
+            <div id="frame-rapor" class="frame">
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2>📊 RAPOR AKADEMIK HUNTER</h2>
+                        <p>Evaluasi menyeluruh akurasi dan performa debugging Anda.</p>
+                    </div>
+
+                    <div class="filter-toolbar mb-4">
+                        <select id="rapor-lang" class="terminal-input select-clean" onchange="showStudentStats()">
+                            <option value="">Semua Bahasa</option>
+                            <option value="python">Python</option>
+                            <option value="javascript">JavaScript</option>
+                            <option value="java">Java</option>
+                            <option value="php">PHP</option>
+                            <option value="cpp">C++</option>
+                            <option value="css">CSS</option>
+                        </select>
+                        <select id="rapor-lvl" class="terminal-input select-clean" onchange="showStudentStats()">
+                            <option value="">Semua Level</option>
+                            <option value="mudah">Mudah</option>
+                            <option value="sedang">Sedang</option>
+                            <option value="sulit">Sulit</option>
+                        </select>
+                    </div>
+
+                    <div class="stats-overview-grid">
+                        <div class="stat-card">
+                            <span class="stat-card-title">📝 Total Soal Diselesaikan</span>
+                            <span id="stat-total" class="stat-card-value text-blue">0</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-card-title">✅ Jawaban Tepat</span>
+                            <span id="stat-benar" class="stat-card-value text-green">0</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-card-title">❌ Total Klik Salah</span>
+                            <span id="stat-gagal" class="stat-card-value text-red">0</span>
+                        </div>
+                        <div class="stat-card highlight-card">
+                            <span class="stat-card-title">🎯 Akurasi Pemahaman</span>
+                            <span id="stat-akurasi" class="stat-card-value text-gold">0%</span>
+                            <div class="progress-bar-container mt-2">
+                                <div id="stat-akurasi-bar" class="progress-bar-fill" style="width: 0%;"></div>
+                            </div>
                         </div>
                     </div>
 
-                    <label>Kode Program (Pisahkan baris dengan Enter):</label>
-                    <textarea id="soal-code" class="terminal-input" style="width: 100%; height: 100px; padding: 10px; margin-bottom: 10px;" required placeholder="def fungsi():\n    print('Halo')"></textarea>
+                    <div class="mt-4">
+                        <button class="secondary-btn" onclick="playSFX(); goToFrame('frame-01')">← KEMBALI KE DASHBOARD</button>
+                    </div>
+                </div>
+            </div>
 
-                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                        <div style="flex: 1;">
-                            <label>Index Bug (Baris ke- berapa yang error, hitung dari 0):</label>
-                            <input type="number" id="soal-idx" class="terminal-input" style="width: 100%; padding: 10px;" required min="0">
+            <!-- 7. LEADERBOARD FRAME -->
+            <div id="frame-leaderboard" class="frame">
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2 style="color: #e3b341;">🏆 TOP BUG HUNTERS HALL OF FAME</h2>
+                        <p>Peringkat developer dengan ketelitian dan kecepatan tertinggi.</p>
+                    </div>
+
+                    <div class="search-box-wrapper mb-3">
+                        <input type="text" id="search-leaderboard" class="terminal-input search-input" placeholder="🔍 Cari nama hunter..." onkeyup="searchLeaderboard()">
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="leaderboard-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 80px;">Peringkat</th>
+                                    <th>Username</th>
+                                    <th>Total Skor</th>
+                                    <th>Gelar Predikat</th>
+                                </tr>
+                            </thead>
+                            <tbody id="leaderboard-body"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="mt-4">
+                        <button class="secondary-btn" onclick="playSFX(); goToFrame('frame-01')">← KEMBALI KE DASHBOARD</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 8. GUIDE FRAME (FRAME-02) -->
+            <div id="frame-02" class="frame">
+                <div class="section-card text-left">
+                    <div class="section-header text-center">
+                        <h2>📖 PANDUAN SISTEM GAMEPLAY</h2>
+                        <p>Pelajari mekanisme penilaian skor, nyawa, dan strategi bermain.</p>
+                    </div>
+
+                    <div class="rules-list">
+                        <div class="rule-item">
+                            <span class="rule-num">1</span>
+                            <div>
+                                <h4>Siklus 10 Misi</h4>
+                                <p>Setiap sesi permainan terdiri dari 10 soal acak. Setiap soal memberikan <b>5 kali kesempatan mencoba</b> menebak baris yang error.</p>
+                            </div>
+                        </div>
+                        <div class="rule-item">
+                            <span class="rule-num">2</span>
+                            <div>
+                                <h4>Sistem Nyawa (HP)</h4>
+                                <p>Kamu memulai dengan <b>3 Nyawa (❤️❤️❤️)</b>. Nyawa akan berkurang 1 jika kamu menggunakan tombol BANTUAN (Hint) atau jika gagal 5x dalam satu soal.</p>
+                            </div>
+                        </div>
+                        <div class="rule-item">
+                            <span class="rule-num">3</span>
+                            <div>
+                                <h4>Penilaian Poin Dasar</h4>
+                                <p>Tingkat Mudah = <b>100 Poin</b>, Sedang = <b>200 Poin</b>, Sulit = <b>300 Poin</b>.</p>
+                            </div>
+                        </div>
+                        <div class="rule-item">
+                            <span class="rule-num">4</span>
+                            <div>
+                                <h4>Bonus Kecepatan & Penalti Hint</h4>
+                                <p>✔️ <b>Bonus Kecepatan</b> (hingga +60 Poin) aktif jika kamu menebak tepat di kesempatan pertama!<br>⚠️ <b>Penggunaan Hint</b> memotong skor dasar soal sebanyak <b>50%</b> dan mengurangi 1 HP.</p>
+                            </div>
+                        </div>
+                        <div class="rule-item">
+                            <span class="rule-num">5</span>
+                            <div>
+                                <h4>Gelar Pencapaian (Badges)</h4>
+                                <p>Kumpulkan minimal <b>1.500 Poin</b> untuk predikat <i>Senior Developer</i>, dan raih <b>3.000 Poin</b> untuk predikat tertinggi <i>Master Bug Hunter</i> lengkap dengan sertifikat resmi!</p>
+                            </div>
                         </div>
                     </div>
 
-                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                        <div style="flex: 1;">
-                            <label>Potongan Kode Salah:</label>
-                            <input type="text" id="soal-wrong" class="terminal-input" style="width: 100%; padding: 10px;" required>
+                    <div class="text-center mt-4">
+                        <button class="action-btn" onclick="playSFX(); goToFrame('frame-01')">SAYA MENGERTI ➜</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 9. SELECTION FRAME (FRAME-03) -->
+            <div id="frame-03" class="frame">
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2>PILIH BAHASA PEMROGRAMAN</h2>
+                        <p>Pilih stack bahasa yang ingin kamu evaluasi:</p>
+                    </div>
+
+                    <div class="language-selection-grid">
+                        <button id="lang-python" class="lang-btn" onclick="playSFX(); selectLang('python')">
+                            <span class="lang-icon">🐍</span>
+                            <span class="lang-title">PYTHON</span>
+                        </button>
+                        <button id="lang-javascript" class="lang-btn" onclick="playSFX(); selectLang('javascript')">
+                            <span class="lang-icon">🟨</span>
+                            <span class="lang-title">JAVASCRIPT</span>
+                        </button>
+                        <button id="lang-java" class="lang-btn" onclick="playSFX(); selectLang('java')">
+                            <span class="lang-icon">☕</span>
+                            <span class="lang-title">JAVA</span>
+                        </button>
+                        <button id="lang-php" class="lang-btn" onclick="playSFX(); selectLang('php')">
+                            <span class="lang-icon">🐘</span>
+                            <span class="lang-title">PHP</span>
+                        </button>
+                        <button id="lang-cpp" class="lang-btn" onclick="playSFX(); selectLang('cpp')">
+                            <span class="lang-icon">⚙️</span>
+                            <span class="lang-title">C++</span>
+                        </button>
+                        <button id="lang-css" class="lang-btn" onclick="playSFX(); selectLang('css')">
+                            <span class="lang-icon">🎨</span>
+                            <span class="lang-title">CSS</span>
+                        </button>
+                    </div>
+
+                    <div class="section-header mt-4">
+                        <h2>PILIH TINGKAT KESULITAN</h2>
+                    </div>
+
+                    <div class="level-selection-grid">
+                        <button id="lvl-mudah" class="lvl-btn lvl-easy" onclick="playSFX(); selectLevel('mudah')">
+                            <span class="lvl-label">MUDAH</span>
+                            <span class="lvl-score">100 Pts / Soal</span>
+                        </button>
+                        <button id="lvl-sedang" class="lvl-btn lvl-med" onclick="playSFX(); selectLevel('sedang')">
+                            <span class="lvl-label">SEDANG</span>
+                            <span class="lvl-score">200 Pts / Soal</span>
+                        </button>
+                        <button id="lvl-sulit" class="lvl-btn lvl-hard" onclick="playSFX(); selectLevel('sulit')">
+                            <span class="lvl-label">SULIT</span>
+                            <span class="lvl-score">300 Pts / Soal</span>
+                        </button>
+                    </div>
+
+                    <div class="mt-4" style="display: flex; justify-content: center; gap: 15px;">
+                        <button class="secondary-btn" onclick="playSFX(); goToFrame('frame-01')">← KEMBALI</button>
+                        <button id="btn-lanjut" class="action-btn" style="display: none;" onclick="playSFX(); fetchQuestionsAndStart()">
+                            MASUK KE EDITOR MISI ➜
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 10. GAMEPLAY SIMULATOR (FRAME-04) -->
+            <div id="frame-04" class="frame">
+                <!-- Arcade HUD Bar -->
+                <div class="arcade-hud">
+                    <div class="hud-item hud-hp">
+                        <span class="hud-label">HP</span>
+                        <span id="hp-display" class="hud-value-hp">❤️❤️❤️</span>
+                    </div>
+
+                    <div class="hud-item hud-score">
+                        <span class="hud-label">SKOR</span>
+                        <span id="score-display" class="hud-value-score">0</span>
+                    </div>
+
+                    <div class="hud-item hud-level">
+                        <span class="hud-label">MISI</span>
+                        <span id="q-counter" class="hud-value-q">1 / 10</span>
+                    </div>
+
+                    <div class="hud-item hud-timer">
+                        <div class="timer-top-row">
+                            <span class="hud-label">WAKTU: <b id="timer-display">60</b>s</span>
+                            <span class="hud-attempt-info">GAGAL: <b id="attempt-display">0/5</b></span>
                         </div>
-                        <div style="flex: 1;">
-                            <label>Potongan Kode Benar:</label>
-                            <input type="text" id="soal-right" class="terminal-input" style="width: 100%; padding: 10px;" required>
+                        <div class="timer-progress-track">
+                            <div id="timer-progress-fill" class="timer-progress-bar" style="width: 100%;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sub HUD Instruction & Hint -->
+                <div class="gameplay-action-bar">
+                    <div class="action-bar-left">
+                        <span class="pulse-dot"></span>
+                        <span class="action-hint-text">Klik baris kode yang menurutmu memiliki bug!</span>
+                    </div>
+                    <button id="btn-hint" class="hint-action-btn" onclick="useHint()">
+                        💡 BANTUAN (-1 HP)
+                    </button>
+                </div>
+
+                <!-- Hint Banner -->
+                <div id="hint-display" class="hint-banner" style="display: none;"></div>
+
+                <!-- VS Code-Style Interactive Code Editor -->
+                <div class="vscode-editor-frame">
+                    <div class="editor-titlebar">
+                        <div class="editor-dots">
+                            <span class="dot dot-red"></span>
+                            <span class="dot dot-yellow"></span>
+                            <span class="dot dot-green"></span>
+                        </div>
+                        <div class="editor-tab active-tab">
+                            <span class="tab-icon">📄</span>
+                            <span id="editor-tab-filename">main.py</span>
+                        </div>
+                        <div class="editor-titlebar-right">
+                            <span class="status-indicator">● LIVE SIMULATION</span>
                         </div>
                     </div>
 
-                    <label>Penjelasan (Review):</label>
-                    <textarea id="soal-exp" class="terminal-input" style="width: 100%; height: 60px; padding: 10px; margin-bottom: 10px;" required></textarea>
+                    <div id="code-editor" class="editor-content-area"></div>
+                </div>
+            </div>
 
-                    <label>Teks Bantuan (Hint):</label>
-                    <input type="text" id="soal-hint" class="terminal-input" style="width: 100%; padding: 10px; margin-bottom: 20px;" required>
+            <!-- POPUP MODAL: TEBAK TIPE ERROR -->
+            <div id="overlay-popup" class="overlay">
+                <div class="popup-box modal-medium">
+                    <div class="popup-badge">🎯 BARIS BUG TERDETEKSI!</div>
+                    <h2 class="popup-title">ANALISIS JENIS ERROR</h2>
+                    <p id="popup-line-info" class="popup-line-desc">Baris #1</p>
+                    <p style="color: #94a3b8; font-size: 14px; margin-bottom: 20px;">Jenis error apa yang terjadi pada baris kode tersebut?</p>
 
-                    <div style="text-align: right;">
-                        <button type="button" class="secondary-btn" style="padding: 10px 20px;" onclick="playSFX(); closeSoalModal()">BATAL</button>
-                        <button type="submit" class="action-btn" style="padding: 10px 20px;">SIMPAN SOAL</button>
+                    <div class="error-choice-grid">
+                        <button class="choice-card choice-syntax" onclick="checkErrorType('Syntax Error')">
+                            <div class="choice-title">A. SYNTAX ERROR</div>
+                            <div class="choice-desc">Kesalahan penulisan aturan tata bahasa kode (kurung, titik koma, ejaan keyword).</div>
+                        </button>
+                        <button class="choice-card choice-logic" onclick="checkErrorType('Logic Error')">
+                            <div class="choice-title">B. LOGIC ERROR</div>
+                            <div class="choice-desc">Program berjalan tapi hasil kalkulasi/alur logika tidak sesuai harapan.</div>
+                        </button>
+                        <button class="choice-card choice-runtime" onclick="checkErrorType('Runtime Error')">
+                            <div class="choice-title">C. RUNTIME ERROR</div>
+                            <div class="choice-desc">Program mengalami crash saat dieksekusi (pembagian nol, index out of range).</div>
+                        </button>
                     </div>
-                </form>
-            </div>
-        </div>
-
-        <div id="overlay-analytics" class="overlay">
-            <div class="popup-box" style="width: 80%; max-height: 80vh; overflow-y: auto; text-align: left;">
-                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #30363d; padding-bottom: 10px; margin-bottom: 15px;">
-                    <h2 style="color: #e3b341; margin: 0;">📊 ANALITIK EVALUASI KELAS</h2>
-                    <button class="secondary-btn" style="margin:0; padding: 5px 10px; border-color:#f85149; color:#f85149;" onclick="playSFX(); document.getElementById('overlay-analytics').style.display='none'">TUTUP</button>
-                </div>
-                <p style="color: #c9d1d9; margin-bottom: 20px;">Daftar 10 Soal paling "mematikan" (paling banyak menjebak siswa dengan tingkat kesalahan tertinggi).</p>
-                
-                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                    <select id="analytics-lang" class="terminal-input" style="padding: 5px 10px;" onchange="fetchTeacherAnalytics()">
-                        <option value="">Semua Bahasa</option>
-                        <option value="python">Python</option>
-                        <option value="javascript">JavaScript</option>
-                        <option value="java">Java</option>
-                        <option value="php">PHP</option>
-                        <option value="cpp">C++</option>
-                        <option value="css">CSS</option>
-                    </select>
-                    <select id="analytics-lvl" class="terminal-input" style="padding: 5px 10px;" onchange="fetchTeacherAnalytics()">
-                        <option value="">Semua Level</option><option value="mudah">Mudah</option><option value="sedang">Sedang</option><option value="sulit">Sulit</option>
-                    </select>
-                </div>
-                <table class="leaderboard-table" style="width: 100%;">
-                    <thead>
-                        <tr>
-                            <th>ID Soal</th><th>Bahasa</th><th>Level</th><th>Error Type</th><th>Total Dijawab</th><th>Total Gagal (Klik Salah)</th><th>Akurasi</th>
-                        </tr>
-                    </thead>
-                    <tbody id="analytics-body">
-                        </tbody>
-                </table>
-            </div>
-        </div>
-        
-        <div id="frame-01" class="frame">
-            <h1 class="main-title" style="font-size: 2.5em;">DASHBOARD</h1>
-            <p class="subtitle">Selamat datang, <span id="display-username" style="color: #3fb950;">Hunter</span>!</p>
-            <div class="menu-buttons">
-                <button onclick="playSFX(); goToFrame('frame-03')" style="border-color: #3fb950;">MULAI BERMAIN</button>
-                <button onclick="playSFX(); goToFrame('frame-02')">PANDUAN</button>
-            </div>
-            <div class="menu-buttons">
-                <button onclick="playSFX(); loadLeaderboard()" style="color: #e3b341;">LEADERBOARD</button>
-                <button onclick="playSFX(); showStudentStats()" style="color: #58a6ff; border-color: #58a6ff;">RAPOR SAYA</button>
-                <button onclick="playSFX(); logOut()" style="border-color: #f85149; color: #f85149;">LOGOUT</button>
-            </div>
-        </div>
-
-        <div id="frame-rapor" class="frame">
-            <h2 style="color: #58a6ff;">RAPOR AKADEMIK HUNTER</h2>
-            
-            <div style="display: flex; gap: 10px; margin-bottom: 15px; width: 60%;">
-                <select id="rapor-lang" class="terminal-input" style="flex:1; padding: 8px;" onchange="showStudentStats()">
-                    <option value="">Semua Bahasa</option>
-                    <option value="python">Python</option>
-                    <option value="javascript">JavaScript</option>
-                    <option value="java">Java</option>
-                    <option value="php">PHP</option>
-                    <option value="cpp">C++</option>
-                    <option value="css">CSS</option>
-                </select>
-                <select id="rapor-lvl" class="terminal-input" style="flex:1; padding: 8px;" onchange="showStudentStats()">
-                    <option value="">Semua Level</option><option value="mudah">Mudah</option><option value="sedang">Sedang</option><option value="sulit">Sulit</option>
-                </select>
-            </div>
-
-            <div style="background: #161b22; border: 1px solid #30363d; border-radius: 5px; padding: 20px; width: 60%; text-align: left; font-size: 18px; margin-bottom: 20px;">
-                <p>📝 Total Soal Dikerjakan: <b id="stat-total" style="color: #c9d1d9;">0</b></p>
-                <p>✅ Jawaban Benar: <b id="stat-benar" style="color: #3fb950;">0</b></p>
-                <p>❌ Kesalahan Kode (Gagal): <b id="stat-gagal" style="color: #f85149;">0</b></p>
-                <hr style="border-color: #30363d; margin: 15px 0;">
-                <p>🎯 Akurasi Pemahaman: <b id="stat-akurasi" style="color: #e3b341; font-size: 24px;">0%</b></p>
-            </div>
-            <button onclick="playSFX(); goToFrame('frame-01')">KEMBALI KE DASHBOARD</button>
-        </div>
-
-        <div id="frame-leaderboard" class="frame">
-            <h2 style="color: #e3b341;">TOP 10 BUG HUNTERS</h2>
-            <input type="text" id="search-leaderboard" class="terminal-input" placeholder="🔍 Cari nama hunter..." style="width: 80%; margin-bottom: 15px; padding: 10px;" onkeyup="searchLeaderboard()">
-            
-            <div style="width: 80%; max-height: 60%; overflow-y: auto; background: #0d1117; border: 1px solid #30363d; border-radius: 5px; margin-bottom: 20px;">
-                <table class="leaderboard-table" style="width: 100%; margin: 0;">
-                    <thead style="position: sticky; top: 0; background-color: #21262d; z-index: 1;">
-                        <tr><th>No</th><th>Username</th><th>Skor</th><th>Badge</th></tr>
-                    </thead>
-                    <tbody id="leaderboard-body"></tbody>
-                </table>
-            </div>
-            <button onclick="playSFX(); goToFrame('frame-01')">KEMBALI KE DASHBOARD</button>
-        </div>
-
-        <div id="frame-02" class="frame">
-            <h2>PANDUAN & DASAR DEBUGGING</h2>
-            <div class="instruction-text" style="text-align: left; background: #161b22; padding: 20px; border-radius: 5px; border: 1px solid #30363d; margin-bottom: 20px;">
-                <p>1. <strong>Sistem Permainan:</strong> Terdapat 10 soal per sesi. Setiap soal diberi 5x kesempatan mencoba.</p>
-                <p>2. <strong>Nyawa (HP):</strong> HP awal adalah 3. HP akan berkurang 1 jika kamu menggunakan HINT atau jika kamu gagal 5x dalam satu soal.</p>
-                <p>3. <strong>Penilaian Poin Dasar:</strong> Level Mudah = 100, Sedang = 200, Sulit = 300.</p>
-                <p>4. <strong>Aturan Bonus & Penalti:</strong> 
-                    <br>✔️ <b>Bonus Kecepatan</b> (maks +60 poin) HANYA berlaku jika kamu langsung menjawab benar di kesempatan pertama.
-                    <br>⚠️ <b>Menggunakan HINT</b> akan memotong poin dasar soal sebanyak 50%!</p>
-                <p>5. <strong>Target Gelar (Badge):</strong> Kumpulkan minimal <b>1.500 poin</b> untuk gelar <i>Senior Developer</i>, dan raih <b>3.000 poin</b> untuk gelar tertinggi <i>Master Bug Hunter</i>!</p>
-            </div>
-            <button onclick="playSFX(); goToFrame('frame-01')">MENGERTI</button>
-        </div>
-
-        <div id="frame-03" class="frame">
-            <h2>PILIH BAHASA PEMROGRAMAN</h2>
-            <div class="selection-grid">
-                <button id="lang-python" onclick="playSFX(); selectLang('python')">PYTHON</button>
-                <button id="lang-javascript" onclick="playSFX(); selectLang('javascript')">JS</button>
-                <button id="lang-java" onclick="playSFX(); selectLang('java')">JAVA</button>
-                <button id="lang-php" onclick="playSFX(); selectLang('php')">PHP</button>
-                <button id="lang-cpp" onclick="playSFX(); selectLang('cpp')">C++</button>
-                <button id="lang-css" onclick="playSFX(); selectLang('css')">CSS</button>
-            </div>
-            <h2 style="margin-top: 30px;">PILIH TINGKAT KESULITAN</h2>
-            <div class="selection-grid">
-                <button id="lvl-mudah" onclick="playSFX(); selectLevel('mudah')">MUDAH</button>
-                <button id="lvl-sedang" onclick="playSFX(); selectLevel('sedang')">SEDANG</button>
-                <button id="lvl-sulit" onclick="playSFX(); selectLevel('sulit')">SULIT</button>
-            </div>
-            <button id="btn-lanjut" class="action-btn" style="display: none;" onclick="playSFX(); fetchQuestionsAndStart()">LANJUT KE EDITOR</button>
-            <button class="secondary-btn" onclick="playSFX(); goToFrame('frame-01')">KEMBALI</button>
-        </div>
-
-        <div id="frame-04" class="frame">
-            <div id="hud">
-                <span class="hp-stat">HP: <span id="hp-display">♥♥♥</span></span>
-                <span class="score-stat">SKOR: <span id="score-display">0</span></span>
-                <span class="lvl-stat">SOAL: <span id="q-counter">1/10</span></span>
-                <span class="timer-stat">WAKTU: <span id="timer-display">60</span>s | GAGAL: <span id="attempt-display">0/5</span></span>
-            </div>
-            
-            <div style="display: flex; justify-content: space-between; width: 80%; align-items: center; margin-bottom: 10px;">
-                <p class="gameplay-hint" style="margin:0;">*Cari baris yang mengandung bug!</p>
-                <button id="btn-hint" class="hint-btn" onclick="useHint()">💡 BANTUAN (-1 HP)</button>
-            </div>
-            <div id="hint-display" class="hint-box" style="display: none;"></div>
-            <div id="code-editor" style="overflow-y: auto; max-height: 350px;"></div>
-        </div>
-
-        <div id="overlay-popup" class="overlay">
-            <div class="popup-box">
-                <h2 class="popup-title">BUG DITEMUKAN!</h2>
-                <p>Jenis error apa yang terjadi pada baris tersebut?</p>
-                <button class="btn-option" onclick="playSFX(); checkErrorType('Syntax Error')">A. SYNTAX ERROR</button>
-                <button class="btn-option" onclick="playSFX(); checkErrorType('Logic Error')">B. LOGIC ERROR</button>
-                <button class="btn-option" onclick="playSFX(); checkErrorType('Runtime Error')">C. RUNTIME ERROR</button>
-            </div>
-        </div>
-
-        <div id="frame-06" class="frame">
-            <h2>PEMBAHASAN KODE</h2>
-            <h3 style="margin-top: -10px; color: #3fb950;">SKOR SAAT INI: <span id="review-score">0</span></h3>
-            <div class="review-container">
-                <div class="code-box box-wrong">
-                    <h3 class="label-wrong">[KODE SALAH]</h3>
-                    <code id="review-wrong"></code>
-                </div>
-                <div class="code-box box-right">
-                    <h3 class="label-right">[KODE BENAR]</h3>
-                    <code id="review-right"></code>
                 </div>
             </div>
-            <div class="explanation-box">
-                <strong>Penjelasan:</strong> <span id="review-explanation"></span>
+
+            <!-- 11. REVIEW SCREEN (FRAME-06) -->
+            <div id="frame-06" class="frame">
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2>📖 PEMBAHASAN TELAAH KODE</h2>
+                        <p>Skor Terkumpul: <b id="review-score" class="text-green font-mono" style="font-size: 20px;">0</b> Poin</p>
+                    </div>
+
+                    <div class="diff-split-container">
+                        <div class="diff-box diff-box-wrong">
+                            <div class="diff-header diff-wrong-header">
+                                <span>❌ KODE BERMASALAH</span>
+                            </div>
+                            <pre class="diff-code-wrapper"><code id="review-wrong"></code></pre>
+                        </div>
+
+                        <div class="diff-box diff-box-right">
+                            <div class="diff-header diff-right-header">
+                                <span>✅ KODE PERBAIKAN</span>
+                            </div>
+                            <pre class="diff-code-wrapper"><code id="review-right"></code></pre>
+                        </div>
+                    </div>
+
+                    <div class="explanation-card">
+                        <div class="explanation-title">💡 Analisis & Penjelasan:</div>
+                        <p id="review-explanation" class="explanation-text"></p>
+                    </div>
+
+                    <div class="mt-4">
+                        <button id="btn-next-q" class="action-btn" onclick="playSFX(); nextQuestion()">
+                            LANJUT KE MISI BERIKUTNYA ➜
+                        </button>
+                        <button id="btn-finish-q" class="action-btn btn-gold" style="display: none;" onclick="playSFX(); showAppreciation()">
+                            SELESAIKAN EVALUASI ➜
+                        </button>
+                    </div>
+                </div>
             </div>
-            <button id="btn-next-q" onclick="playSFX(); nextQuestion()">LANJUT KE SOAL BERIKUTNYA</button>
-            <button id="btn-finish-q" style="display:none; background-color:#e3b341; color:#000;" onclick="playSFX(); showAppreciation()">SELESAIKAN MISI</button>
+
+            <!-- 12. APPRECIATION / FINISH SCREEN -->
+            <div id="frame-apresiasi" class="frame">
+                <div class="appreciation-card">
+                    <div class="completion-pill">EVALUASI SELESAI</div>
+                    <div id="badge-icon" class="trophy-icon">🏆</div>
+                    <h1 class="completion-title">MISI SELESAI!</h1>
+                    <p style="color: #94a3b8; font-size: 16px;">Sistem evaluasi Code Bug Hunter telah mencatat hasil performa Anda.</p>
+
+                    <div class="badge-award-box">
+                        <span class="badge-award-label">PREDIKAT GELAR ANDA:</span>
+                        <h2 id="badge-title" class="badge-award-title">Master Bug Hunter</h2>
+                        <div class="badge-score-pill">
+                            TOTAL SKOR: <span id="final-score" class="font-mono">0</span> POIN
+                        </div>
+                    </div>
+
+                    <div class="appreciation-actions">
+                        <button class="action-btn btn-blue" onclick="playSFX(); downloadCertificate()">
+                            📜 UNDUH SERTIFIKAT RESMI (PDF)
+                        </button>
+                        <button class="secondary-btn" onclick="playSFX(); resetGameToDashboard()">
+                            🏠 KEMBALI KE DASHBOARD
+                        </button>
+                    </div>
+                </div>
+            </div>
+
         </div>
+    </main>
 
-        <div id="frame-apresiasi" class="frame">
-            <h1 style="font-size: 3em; color: #3fb950; margin-bottom: 0;">MISI SELESAI</h1>
-            <p class="subtitle">Sistem telah dievaluasi.</p>
-            
-            <div class="badge-box">
-                <div id="badge-icon" style="font-size: 50px; margin-bottom: 10px;">🏆</div>
-                <h2 id="badge-title" style="color: #e3b341; margin: 0;">Master Bug Hunter</h2>
-                <p style="color: #c9d1d9; font-size: 18px;">TOTAL SKOR: <b id="final-score" style="color: #3fb950; font-size: 24px;">1000</b></p>
-            </div>
-
-            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
-                <button class="action-btn" style="background-color: #58a6ff;" onclick="playSFX(); downloadCertificate()">UNDUH SERTIFIKAT</button>
-                <button class="action-btn" onclick="playSFX(); resetGameToDashboard()">KEMBALI KE DASHBOARD</button>
-            </div>
-        </div>
-
-    </div>
-
+    <!-- Toast Notifications Layer -->
     <div id="toast-container"></div>
 
+    <!-- Application Scripts -->
     <script src="ui.js"></script>
     <script src="auth.js"></script>
     <script src="admin.js"></script>
     <script src="game.js"></script>
-    
-    <!-- TAMBAHAN: PrismJS Script -->
+
+    <!-- PrismJS Languages -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-php.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-cpp.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js"></script>
 </body>
 </html>
