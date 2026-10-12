@@ -1,4 +1,4 @@
-// ui.js - Audio Manager, Navigasi Layar & Toast Notification Interaktif
+// ui.js - Audio Manager, Navigasi Layar & Toast Notification Interaktif (Tanpa Emoticon)
 
 let currentUser = { id: null, username: '', role: '' };
 
@@ -23,11 +23,15 @@ function updateAudioIcons() {
     const bgmBtn = document.getElementById('btn-toggle-bgm');
     const sfxBtn = document.getElementById('btn-toggle-sfx');
     if (bgmBtn) {
-        bgmBtn.innerHTML = isBgmMuted ? '🔇 <span class="audio-label">BGM Off</span>' : '🎵 <span class="audio-label">BGM On</span>';
+        bgmBtn.innerHTML = isBgmMuted 
+            ? '<span class="audio-indicator off"></span> <span class="audio-label">BGM Off</span>' 
+            : '<span class="audio-indicator on"></span> <span class="audio-label">BGM On</span>';
         bgmBtn.classList.toggle('muted', isBgmMuted);
     }
     if (sfxBtn) {
-        sfxBtn.innerHTML = isSfxMuted ? '🔕 <span class="audio-label">SFX Off</span>' : '🔔 <span class="audio-label">SFX On</span>';
+        sfxBtn.innerHTML = isSfxMuted 
+            ? '<span class="audio-indicator off"></span> <span class="audio-label">SFX Off</span>' 
+            : '<span class="audio-indicator on"></span> <span class="audio-label">SFX On</span>';
         sfxBtn.classList.toggle('muted', isSfxMuted);
     }
 }
@@ -86,12 +90,10 @@ function goToFrame(frameId) {
     const target = document.getElementById(frameId);
     if (target) {
         target.classList.add('active');
-        // Scroll container to top smoothly
         const container = document.getElementById('app-main-viewport') || window;
         if (container.scrollTo) container.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    // Update Header Status
     updateHeaderUI(frameId);
 }
 
@@ -105,7 +107,11 @@ function updateHeaderUI(activeFrameId) {
         if (userBadge) userBadge.style.display = 'flex';
         if (navUsername) navUsername.innerText = currentUser.username;
         if (navRole) {
-            navRole.innerText = currentUser.role === 'guru' ? 'GURU / DOSEN' : 'HUNTER';
+            let roleLabel = 'HUNTER';
+            if (currentUser.role === 'superadmin') roleLabel = 'SUPER ADMIN';
+            else if (currentUser.role === 'guru') roleLabel = 'EVALUATOR';
+            
+            navRole.innerText = roleLabel;
             navRole.className = `role-chip role-${currentUser.role}`;
         }
         if (navLogout) navLogout.style.display = 'inline-flex';
@@ -115,7 +121,7 @@ function updateHeaderUI(activeFrameId) {
     }
 }
 
-// Toast Notification Interaktif
+// Toast Notification Interaktif Tanpa Emoticon
 function showToast(message, type = 'info') {
     const container = document.getElementById('toast-container');
     if (!container) return;
@@ -123,13 +129,13 @@ function showToast(message, type = 'info') {
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
 
-    let icon = 'ℹ️';
-    if (type === 'success') icon = '✅';
-    else if (type === 'error') icon = '❌';
-    else if (type === 'warning') icon = '⚠️';
+    let badgeText = 'INFO';
+    if (type === 'success') badgeText = 'SUKSES';
+    else if (type === 'error') badgeText = 'ERROR';
+    else if (type === 'warning') badgeText = 'PERINGATAN';
 
     toast.innerHTML = `
-        <span class="toast-icon">${icon}</span>
+        <span class="toast-badge-tag toast-tag-${type}">[${badgeText}]</span>
         <div class="toast-body">${message.replace(/\n/g, '<br>')}</div>
         <button class="toast-close" onclick="this.parentElement.remove()">✕</button>
     `;

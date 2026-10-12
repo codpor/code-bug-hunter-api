@@ -1,4 +1,4 @@
-// game.js - Logika Gameplay, Editor Interaktif, HUD Arcade, & Generator Sertifikat Resmi
+// game.js - Logika Gameplay, Editor Interaktif, HUD Arcade, & Generator Sertifikat Resmi (Tanpa Emoticon)
 
 let selectedLang = ''; 
 let selectedLevel = '';
@@ -196,7 +196,6 @@ function loadCurrentQuestion() {
         editor.appendChild(div);
     });
     
-    // Terapkan Prism Syntax Highlighting jika tersedia
     if (window.Prism) {
         Prism.highlightAllUnder(editor);
     }
@@ -205,13 +204,13 @@ function loadCurrentQuestion() {
 }
 
 function updateHUD() {
-    // Render Hearts
-    let hearts = ''; 
-    for(let i = 0; i < hp; i++) hearts += '❤️';
-    for(let i = hp; i < 3; i++) hearts += '🖤';
-    
+    let heartsHtml = '<div class="hp-display-container">';
+    for(let i = 0; i < hp; i++) heartsHtml += '<span class="hp-point filled"></span>';
+    for(let i = hp; i < 3; i++) heartsHtml += '<span class="hp-point empty"></span>';
+    heartsHtml += '</div>';
+
     const hpEl = document.getElementById('hp-display');
-    if (hpEl) hpEl.innerHTML = hearts;
+    if (hpEl) hpEl.innerHTML = heartsHtml;
 
     const scoreEl = document.getElementById('score-display');
     if (scoreEl) scoreEl.innerText = score.toLocaleString();
@@ -244,7 +243,7 @@ function useHint() {
         updateHUD();
         const hintDisplay = document.getElementById('hint-display');
         if (hintDisplay) {
-            hintDisplay.innerHTML = `<strong>💡 Bantuan:</strong> ${questionsList[currentQIndex].hint_text}`;
+            hintDisplay.innerHTML = `<strong>Petunjuk Bantuan:</strong> ${questionsList[currentQIndex].hint_text}`;
             hintDisplay.style.display = 'block';
         }
         
@@ -258,7 +257,6 @@ async function handleLineClick(index) {
     const currentQ = questionsList[currentQIndex];
     attempts++; 
 
-    // Visual line pulse
     const lineEl = document.getElementById(`code-line-${index}`);
     if (lineEl) lineEl.classList.add('line-clicked');
     
@@ -341,7 +339,7 @@ async function checkErrorType(answerType) {
         if (data.is_correct) {
             playCorrect(); 
             score += data.earned_points; 
-            showToast(`Luar biasa! +${data.earned_points} Poin`, "success");
+            showToast(`Jawaban Benar! +${data.earned_points} Poin`, "success");
             
             document.getElementById('review-wrong').innerText = data.wrong_snippet || '-';
             document.getElementById('review-right').innerText = data.right_snippet || '-';
@@ -423,16 +421,13 @@ async function showAppreciation() {
     document.getElementById('final-score').innerText = score.toLocaleString();
     
     let badge = 'Junior Hunter'; 
-    let icon = '🎖️';
     let color = '#3fb950';
 
     if (score >= 3000) { 
         badge = 'Master Bug Hunter'; 
-        icon = '👑'; 
         color = '#e3b341';
     } else if (score >= 1500) { 
         badge = 'Senior Developer'; 
-        icon = '🏆'; 
         color = '#58a6ff';
     }
 
@@ -442,16 +437,18 @@ async function showAppreciation() {
         badgeTitleEl.innerText = badge;
         badgeTitleEl.style.color = color;
     }
-    if (badgeIconEl) badgeIconEl.innerText = icon;
+    if (badgeIconEl) {
+        badgeIconEl.innerHTML = '<img src="favicon.png" class="trophy-img" alt="Code Bug Hunter Logo">';
+    }
     
-    if (currentUser.id && currentUser.role !== 'guru') {
+    if (currentUser.id && currentUser.role !== 'guru' && currentUser.role !== 'superadmin') {
         try { 
             await fetchWithAuth('/api/save-score', { 
                 method: 'POST', 
                 headers: { 'Content-Type': 'application/json' }, 
                 body: JSON.stringify({ score: score, badge: badge }) 
             }); 
-            showToast("Skor dan badge Anda berhasil disimpan ke Leaderboard!", "success");
+            showToast("Skor dan predikat Anda berhasil disimpan ke Leaderboard!", "success");
         } catch(e) {}
     }
 }
@@ -497,23 +494,23 @@ function renderLeaderboardTable(data, isSearching = false) {
     data.forEach((row, index) => {
         let tr = document.createElement('tr');
         
-        let rankBadge = `${index + 1}`;
+        let rankBadge = `#${index + 1}`;
         let rowClass = '';
-        if (index === 0) { rankBadge = '🥇 #1'; rowClass = 'rank-gold'; }
-        else if (index === 1) { rankBadge = '🥈 #2'; rowClass = 'rank-silver'; }
-        else if (index === 2) { rankBadge = '🥉 #3'; rowClass = 'rank-bronze'; }
+        if (index === 0) { rowClass = 'rank-gold'; }
+        else if (index === 1) { rowClass = 'rank-silver'; }
+        else if (index === 2) { rowClass = 'rank-bronze'; }
 
         const isCurrent = currentUser.username && row.username.toLowerCase() === currentUser.username.toLowerCase();
         if (isCurrent) rowClass += ' current-user-row';
 
         tr.className = rowClass;
         tr.innerHTML = `
-            <td style="font-weight: bold;">${rankBadge}</td>
+            <td style="font-weight: bold; font-family: monospace;">${rankBadge}</td>
             <td style="font-weight: 600;">
                 <span class="user-cell-name">${row.username}</span>
                 ${isCurrent ? '<span class="you-pill">KAMU</span>' : ''}
             </td>
-            <td style="font-weight: bold; color: #3fb950;">${(row.total_score || 0).toLocaleString()}</td>
+            <td style="font-weight: bold; color: #3fb950; font-family: monospace;">${(row.total_score || 0).toLocaleString()}</td>
             <td><span class="badge-pill">${row.badge_title || 'Junior Hunter'}</span></td>
         `;
         tbody.appendChild(tr);
@@ -558,7 +555,7 @@ async function showStudentStats() {
     }
 }
 
-// Unduh Sertifikat Resmi (jsPDF Pro Design)
+// Unduh Sertifikat Resmi (jsPDF Pro Design Tanpa Emoticon)
 function downloadCertificate() {
     if (!window.jspdf || !window.jspdf.jsPDF) {
         showToast("Modul cetak PDF sedang dimuat, mohon coba sesaat lagi.", "warning");
@@ -575,21 +572,17 @@ function downloadCertificate() {
     const pageWidth = 297;
     const pageHeight = 210;
 
-    // Background Gradient Simulated
-    doc.setFillColor(10, 15, 29); // Dark Cyber Slate
+    doc.setFillColor(10, 15, 29);
     doc.rect(0, 0, pageWidth, pageHeight, 'F');
 
-    // Outer Border (Gold Neon)
     doc.setDrawColor(227, 179, 65);
     doc.setLineWidth(2.5);
     doc.rect(8, 8, pageWidth - 16, pageHeight - 16);
 
-    // Inner Delicate Border
-    doc.setDrawColor(56, 189, 248); // Cyan
+    doc.setDrawColor(56, 189, 248);
     doc.setLineWidth(0.6);
     doc.rect(12, 12, pageWidth - 24, pageHeight - 24);
 
-    // Top Header / Crest
     doc.setTextColor(56, 189, 248);
     doc.setFontSize(11);
     doc.setFont("courier", "bold");
@@ -605,19 +598,16 @@ function downloadCertificate() {
     doc.setFont("helvetica", "normal");
     doc.text("Sertifikat ini secara resmi diberikan atas kelulusan evaluasi debugging interaktif kepada:", pageWidth / 2, 56, { align: 'center' });
 
-    // Recipient Name
     const recipientName = (currentUser.username || "HUNTER DEVELOPER").toUpperCase();
     doc.setTextColor(248, 250, 252);
     doc.setFontSize(32);
     doc.setFont("helvetica", "bold");
     doc.text(recipientName, pageWidth / 2, 74, { align: 'center' });
 
-    // Decorative line under name
     doc.setDrawColor(227, 179, 65);
     doc.setLineWidth(1);
     doc.line(75, 78, pageWidth - 75, 78);
 
-    // Description text
     const langDisplay = selectedLang ? selectedLang.toUpperCase() : "MULTI-BAHASA";
     const lvlDisplay = selectedLevel ? selectedLevel.toUpperCase() : "STANDARD";
     const badge = document.getElementById('badge-title') ? document.getElementById('badge-title').innerText : 'Bug Hunter';
@@ -629,7 +619,6 @@ function downloadCertificate() {
     const desc = `Telah membuktikan kecakapan dalam mendeteksi dan memperbaiki bug logika, sintaksis,\ndan runtime pada simulasi pemrograman ${langDisplay} tingkat ${lvlDisplay}.`;
     doc.text(desc, pageWidth / 2, 92, { align: 'center', lineHeightFactor: 1.4 });
 
-    // Predikat Box
     doc.setFillColor(15, 23, 42);
     doc.roundedRect(60, 110, pageWidth - 120, 26, 3, 3, 'F');
     doc.setDrawColor(56, 189, 248);
@@ -645,12 +634,10 @@ function downloadCertificate() {
     doc.setFontSize(11);
     doc.text(`TOTAL SKOR AKHIR: ${finalScore} POIN`, pageWidth / 2, 128, { align: 'center' });
 
-    // Signatures & Metadata
     const today = new Date();
     const dateStr = today.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
     const certId = `CBH-${today.getFullYear()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
-    // Left metadata: Verification ID
     doc.setTextColor(100, 116, 139);
     doc.setFontSize(9);
     doc.setFont("courier", "normal");
@@ -658,7 +645,6 @@ function downloadCertificate() {
     doc.text(`STATUS EVALUASI: VERIFIED & RECORDED`, 20, 176);
     doc.text(`TERBIT PADA: ${dateStr}`, 20, 182);
 
-    // Right Signature / Stamp
     doc.setTextColor(248, 250, 252);
     doc.setFontSize(11);
     doc.setFont("helvetica", "bold");
@@ -670,7 +656,6 @@ function downloadCertificate() {
     doc.setFontSize(9);
     doc.text("Code Bug Hunter Core System", pageWidth - 55, 181, { align: 'center' });
 
-    // Save PDF
     const filename = `Sertifikat_${recipientName.replace(/\s+/g, '_')}_CodeBugHunter.pdf`;
     doc.save(filename);
     showToast("Sertifikat berhasil diunduh!", "success");

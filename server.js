@@ -53,7 +53,7 @@ async function seedSuperAdmin() {
                     const insertSql = "INSERT INTO users (username, email, password, role) VALUES ('superadmin', 'admin@codebughunter.com', ?, 'superadmin')";
                     db.query(insertSql, [hashedPassword], (insertErr) => {
                         if (!insertErr) {
-                            console.log("👑 Akun Default Super Admin berhasil diinisialisasi (username: superadmin, password: AdminHunter#2026)!");
+                            console.log("[SUPER ADMIN] Akun Default Super Admin berhasil diinisialisasi (username: superadmin, password: AdminHunter#2026)!");
                         }
                     });
                 } catch (e) {
@@ -67,9 +67,9 @@ async function seedSuperAdmin() {
 // Test connection pool & inisialisasi superadmin
 db.getConnection((err, conn) => {
     if (err) {
-        console.error("⚠️ TiDB Database Connection Warning:", err.message);
+        console.error("[DATABASE WARNING] TiDB Database Connection Warning:", err.message);
     } else {
-        console.log('✅ Terhubung ke Database MySQL/TiDB Code Bug Hunter via Connection Pool!');
+        console.log('[DATABASE] Terhubung ke Database MySQL/TiDB Code Bug Hunter via Connection Pool!');
         conn.release();
         seedSuperAdmin();
     }
@@ -605,7 +605,7 @@ app.delete('/api/admin/leaderboard/:id', authenticateToken, (req, res) => {
 // Local dev server listener
 if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
     app.listen(PORT, () => {
-        console.log(`🚀 Code Bug Hunter Server berjalan di port ${PORT}`);
+        console.log(`[SERVER] Code Bug Hunter Server berjalan di port ${PORT}`);
     });
 }
 

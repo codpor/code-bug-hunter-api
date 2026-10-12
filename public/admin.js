@@ -1,4 +1,4 @@
-// admin.js - Mengelola Fitur Dashboard Guru & Super Admin (CRUD Soal, Manajemen User, & Sistem)
+// admin.js - Mengelola Fitur Dashboard Guru & Super Admin (CRUD Soal, Manajemen User, & Sistem) - Tanpa Emoticon
 
 let globalUsersData = [];
 
@@ -6,14 +6,12 @@ let globalUsersData = [];
 function setupAdminTabs() {
     const isSuper = (currentUser.role === 'superadmin');
     
-    // Tampilkan tombol tab super admin jika rolenya superadmin
     const userTabBtn = document.getElementById('btn-tab-users');
     const systemTabBtn = document.getElementById('btn-tab-system');
     
     if (userTabBtn) userTabBtn.style.display = isSuper ? 'inline-flex' : 'none';
     if (systemTabBtn) systemTabBtn.style.display = isSuper ? 'inline-flex' : 'none';
 
-    // Secara default buka tab soal jika belum ada tab aktif
     switchAdminTab('soal');
 }
 
@@ -64,7 +62,6 @@ async function fetchAdminQuestions() {
         if (!data || data.length === 0) {
             listContainer.innerHTML = `
                 <div style="text-align: center; padding: 50px 20px; background: rgba(22, 27, 34, 0.6); border-radius: 12px; border: 1px dashed #30363d;">
-                    <div style="font-size: 40px; margin-bottom: 10px;">📂</div>
                     <h3 style="color: #c9d1d9; margin-bottom: 8px;">Belum ada soal untuk kategori ini</h3>
                     <p style="color: #8b949e; font-size: 14px; margin-bottom: 20px;">Bahasa: <b>${lang.toUpperCase()}</b> | Level: <b>${lvl.toUpperCase()}</b></p>
                     <button class="action-btn" onclick="playSFX(); openSoalModal()">+ Tambah Soal Pertama</button>
@@ -106,30 +103,30 @@ async function fetchAdminQuestions() {
                         <span class="error-chip" style="border-color: ${badgeColor}; color: ${badgeColor};">${q.error_type}</span>
                     </div>
                     <div class="card-actions">
-                        <button class="btn-sm btn-edit" onclick="playSFX(); editSoal(${q.id}, '${lang}', '${lvl}')">✏️ EDIT</button>
-                        <button class="btn-sm btn-delete" onclick="playSFX(); deleteSoal(${q.id})">🗑️ HAPUS</button>
+                        <button class="btn-sm btn-edit" onclick="playSFX(); editSoal(${q.id}, '${lang}', '${lvl}')">Edit</button>
+                        <button class="btn-sm btn-delete" onclick="playSFX(); deleteSoal(${q.id})">Hapus</button>
                     </div>
                 </div>
                 <div class="soal-card-grid">
                     <div class="soal-code-container">
-                        <div class="code-box-title">💻 Cuplikan Kode Program:</div>
+                        <div class="code-box-title">Cuplikan Kode Program:</div>
                         <div class="soal-code-wrapper">${codeHtml}</div>
                     </div>
                     <div class="soal-details-col">
                         <div class="detail-box box-wrong-detail">
-                            <span class="detail-label text-danger">❌ Baris Salah (Index ${q.bug_index}):</span>
+                            <span class="detail-label text-danger">Baris Salah (Index ${q.bug_index}):</span>
                             <code>${(q.wrong_snippet || '').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code>
                         </div>
                         <div class="detail-box box-right-detail">
-                            <span class="detail-label text-success">✅ Pembetulan Kode:</span>
+                            <span class="detail-label text-success">Pembetulan Kode:</span>
                             <code>${(q.right_snippet || '').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code>
                         </div>
                         <div class="detail-box box-hint-detail">
-                            <span class="detail-label text-warning">💡 Hint Bantuan:</span>
+                            <span class="detail-label text-warning">Petunjuk Bantuan:</span>
                             <span>${q.hint_text || '-'}</span>
                         </div>
                         <div class="detail-box box-exp-detail">
-                            <span class="detail-label">📖 Penjelasan Review:</span>
+                            <span class="detail-label">Penjelasan Review:</span>
                             <p style="margin: 4px 0 0; color: #c9d1d9; font-size: 13px;">${q.explanation || '-'}</p>
                         </div>
                     </div>
@@ -419,9 +416,8 @@ function renderUsersTable(users) {
         const dateStr = u.created_at ? new Date(u.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
         
         let roleBadgeClass = 'role-badge-siswa';
-        let roleIcon = '👤';
-        if (u.role === 'guru') { roleBadgeClass = 'role-badge-guru'; roleIcon = '👨‍🏫'; }
-        else if (u.role === 'superadmin') { roleBadgeClass = 'role-badge-superadmin'; roleIcon = '👑'; }
+        if (u.role === 'guru') { roleBadgeClass = 'role-badge-guru'; }
+        else if (u.role === 'superadmin') { roleBadgeClass = 'role-badge-superadmin'; }
 
         tr.innerHTML = `
             <td style="font-family: monospace; color: #58a6ff; font-weight: bold;">#${u.id}</td>
@@ -431,20 +427,20 @@ function renderUsersTable(users) {
             </td>
             <td style="color: #94a3b8; font-size: 13px;">${u.email}</td>
             <td>
-                <span class="role-badge-item ${roleBadgeClass}">${roleIcon} ${u.role.toUpperCase()}</span>
+                <span class="role-badge-item ${roleBadgeClass}">[${u.role.toUpperCase()}]</span>
             </td>
             <td style="font-size: 12px; color: #64748b;">${dateStr}</td>
             <td>
                 <div class="user-action-group">
                     <button class="btn-user-action btn-change-role" onclick="playSFX(); promptChangeRole(${u.id}, '${u.username}', '${u.role}')" title="Ubah Peran">
-                        ⚡ Peran
+                        Ubah Role
                     </button>
                     <button class="btn-user-action btn-reset-pwd" onclick="playSFX(); promptResetPassword(${u.id}, '${u.username}')" title="Reset Password">
-                        🔑 Password
+                        Reset Sandi
                     </button>
                     ${!isSelf ? `
                     <button class="btn-user-action btn-delete-user" onclick="playSFX(); deleteUser(${u.id}, '${u.username}')" title="Hapus Akun">
-                        🗑️ Hapus
+                        Hapus
                     </button>` : ''}
                 </div>
             </td>

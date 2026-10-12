@@ -1,4 +1,4 @@
-// auth.js - Mengelola Autentikasi Pengguna & JWT Token
+// auth.js - Mengelola Autentikasi Pengguna & JWT Token (Tanpa Emoticon)
 
 // Helper untuk Request API dengan Authorization Token
 async function fetchWithAuth(url, options = {}) {
@@ -14,7 +14,6 @@ async function fetchWithAuth(url, options = {}) {
         
         // Jika token kadaluarsa atau tidak valid, logout paksa
         if (response.status === 401 || response.status === 403) {
-            // Khusus pesan izin superadmin, tampilkan pesan tanpa langsung logout jika hanya masalah role
             if (response.status === 403) {
                 const data = await response.clone().json().catch(() => ({}));
                 if (data.message && data.message.includes('Akses ditolak')) {
@@ -69,7 +68,6 @@ async function simulateLogin() {
             showToast(`Selamat datang kembali, ${currentUser.username}!`, "success");
             document.getElementById('login-form').reset();
 
-            // Mulai BGM jika tidak dimute
             if (bgm && !isBgmMuted) {
                 bgm.volume = 0.25;
                 bgm.play().catch(() => {});
@@ -78,17 +76,15 @@ async function simulateLogin() {
             if (currentUser.role === 'guru' || currentUser.role === 'superadmin') {
                 const guruNameEl = document.getElementById('guru-name');
                 if (guruNameEl) {
-                    const badgeIcon = currentUser.role === 'superadmin' ? '👑 SUPER ADMIN' : '👨‍🏫 GURU';
-                    guruNameEl.innerText = `${currentUser.username.toUpperCase()} (${badgeIcon})`;
+                    const badgeIcon = currentUser.role === 'superadmin' ? 'SUPER ADMIN' : 'EVALUATOR';
+                    guruNameEl.innerText = `${currentUser.username.toUpperCase()} [${badgeIcon}]`;
                 }
                 goToFrame('frame-guru');
                 
-                // Tampilkan tab superadmin jika role superadmin
                 if (typeof setupAdminTabs === 'function') {
                     setupAdminTabs();
                 }
 
-                // Auto fetch default questions if filters selected
                 const filterLang = document.getElementById('filter-lang');
                 const filterLvl = document.getElementById('filter-lvl');
                 if (filterLang && filterLvl && filterLang.value && filterLvl.value) {
@@ -160,7 +156,6 @@ async function simulateRegister() {
     }
 }
 
-// Inisialisasi status login saat halaman pertama dibuka
 window.addEventListener('load', () => {
     initAudio();
     const storedUser = localStorage.getItem('user');
@@ -173,8 +168,8 @@ window.addEventListener('load', () => {
                 if (currentUser.role === 'guru' || currentUser.role === 'superadmin') {
                     const guruNameEl = document.getElementById('guru-name');
                     if (guruNameEl) {
-                        const badgeIcon = currentUser.role === 'superadmin' ? '👑 SUPER ADMIN' : '👨‍🏫 GURU';
-                        guruNameEl.innerText = `${currentUser.username.toUpperCase()} (${badgeIcon})`;
+                        const badgeIcon = currentUser.role === 'superadmin' ? 'SUPER ADMIN' : 'EVALUATOR';
+                        guruNameEl.innerText = `${currentUser.username.toUpperCase()} [${badgeIcon}]`;
                     }
                     goToFrame('frame-guru');
                     if (typeof setupAdminTabs === 'function') {

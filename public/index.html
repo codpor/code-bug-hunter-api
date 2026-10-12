@@ -31,7 +31,7 @@
     <header id="main-header">
         <div class="header-container">
             <div class="header-brand" onclick="goToFrame(currentUser.id ? (currentUser.role === 'guru' || currentUser.role === 'superadmin' ? 'frame-guru' : 'frame-01') : 'frame-landing')">
-                <span class="brand-icon">⚡</span>
+                <img src="favicon.png" class="brand-logo-img" alt="Logo">
                 <span class="brand-text">CODE BUG HUNTER</span>
                 <span class="brand-badge">PRO v2.0</span>
             </div>
@@ -39,15 +39,17 @@
             <div class="header-actions">
                 <!-- Audio Controls -->
                 <button id="btn-toggle-bgm" class="btn-icon" onclick="toggleBGM()" title="Aktif/Nonaktifkan Musik">
-                    🎵 <span class="audio-label">BGM</span>
+                    <span class="audio-label">BGM: ON</span>
                 </button>
                 <button id="btn-toggle-sfx" class="btn-icon" onclick="toggleSFX()" title="Aktif/Nonaktifkan Efek Suara">
-                    🔔 <span class="audio-label">SFX</span>
+                    <span class="audio-label">SFX: ON</span>
                 </button>
 
                 <!-- User Session Badge -->
                 <div id="nav-user-badge" class="nav-user-badge" style="display: none;">
-                    <div class="user-avatar-circle">👤</div>
+                    <div class="user-avatar-circle">
+                        <img src="favicon.png" class="brand-logo-img" style="width: 20px; height: 20px; margin: 0;" alt="Avatar">
+                    </div>
                     <div class="user-info-text">
                         <span id="nav-username" class="user-name-text">HUNTER</span>
                         <span id="nav-role" class="role-chip role-siswa">SISWA</span>
@@ -74,17 +76,23 @@
                     
                     <div class="feature-cards-grid">
                         <div class="feature-card">
-                            <div class="card-icon">🎯</div>
+                            <div class="card-icon">
+                                <img src="favicon.png" class="brand-logo-img" style="width: 32px; height: 32px; margin: 0;" alt="Editor Simulator">
+                            </div>
                             <h3>Editor Simulator</h3>
                             <p>Deteksi baris yang salah langsung di dalam simulator editor kode multi-bahasa.</p>
                         </div>
                         <div class="feature-card">
-                            <div class="card-icon">⚡</div>
+                            <div class="card-icon">
+                                <img src="favicon.png" class="brand-logo-img" style="width: 32px; height: 32px; margin: 0;" alt="Tipe Error">
+                            </div>
                             <h3>Uji Tipe Error</h3>
                             <p>Identifikasi apakah bug merupakan Syntax Error, Logic Error, atau Runtime Error.</p>
                         </div>
                         <div class="feature-card">
-                            <div class="card-icon">🏆</div>
+                            <div class="card-icon">
+                                <img src="favicon.png" class="brand-logo-img" style="width: 32px; height: 32px; margin: 0;" alt="Sertifikat Resmi">
+                            </div>
                             <h3>Sertifikat Resmi</h3>
                             <p>Kumpulkan poin dan unduh sertifikat pencapaian resmi kelulusan debugging Anda.</p>
                         </div>
@@ -92,7 +100,7 @@
 
                     <div class="landing-cta-group">
                         <button class="action-btn cta-large" onclick="playSFX(); goToFrame('frame-login')">
-                            MULAI MISI SEKARANG ➜
+                            MULAI MISI SEKARANG
                         </button>
                     </div>
                 </div>
@@ -101,7 +109,9 @@
             <!-- 2. LOGIN FRAME -->
             <div id="frame-login" class="frame">
                 <div class="auth-card">
-                    <div class="card-header-icon">🔐</div>
+                    <div class="card-header-icon">
+                        <img src="favicon.png" class="hero-logo-img" alt="Code Bug Hunter">
+                    </div>
                     <h2 class="auth-title">SYSTEM LOGIN</h2>
                     <p class="auth-subtitle">Masukkan identitas akun untuk membuka akses terminal.</p>
 
@@ -127,7 +137,9 @@
             <!-- 3. REGISTER FRAME -->
             <div id="frame-register" class="frame">
                 <div class="auth-card">
-                    <div class="card-header-icon">🚀</div>
+                    <div class="card-header-icon">
+                        <img src="favicon.png" class="hero-logo-img" alt="Code Bug Hunter">
+                    </div>
                     <h2 class="auth-title" style="color: #e3b341;">REGISTRASI AKUN</h2>
                     <p class="auth-subtitle">Daftarkan akun sebagai Siswa untuk bermain atau Guru untuk kelola soal.</p>
 
@@ -178,13 +190,13 @@
                 <!-- Super Admin / Admin Tab Switcher -->
                 <div class="admin-tab-nav-bar mb-3">
                     <button id="btn-tab-soal" class="admin-nav-tab active" onclick="switchAdminTab('soal')">
-                        💻 Bank Soal & Kurikulum
+                        Bank Soal & Kurikulum
                     </button>
                     <button id="btn-tab-users" class="admin-nav-tab" onclick="switchAdminTab('users')" style="display: none;">
-                        👑 Manajemen Pengguna
+                        Manajemen Pengguna
                     </button>
                     <button id="btn-tab-system" class="admin-nav-tab" onclick="switchAdminTab('system')" style="display: none;">
-                        🛡️ Statistik Sistem & Moderasi
+                        Statistik Sistem & Moderasi
                     </button>
                 </div>
 
@@ -208,16 +220,16 @@
                                 <option value="sedang">Sedang</option>
                                 <option value="sulit">Sulit</option>
                             </select>
-                            <button class="action-btn btn-compact" onclick="playSFX(); fetchAdminQuestions()">🔍 TAMPILKAN</button>
+                            <button class="action-btn btn-compact" onclick="playSFX(); fetchAdminQuestions()">TAMPILKAN</button>
                         </div>
 
                         <div class="toolbar-divider"></div>
 
                         <div class="actions-group">
                             <button class="action-btn btn-compact btn-blue" onclick="playSFX(); openSoalModal()">+ TAMBAH SOAL</button>
-                            <button class="action-btn btn-compact btn-gold" onclick="playSFX(); fetchTeacherAnalytics()">📊 ANALITIK KELAS</button>
-                            <button class="secondary-btn btn-compact" onclick="playSFX(); exportSoal()" title="Unduh File Backup JSON">⬇️ BACKUP</button>
-                            <button class="secondary-btn btn-compact" onclick="playSFX(); document.getElementById('import-file').click()" title="Unggah File Backup JSON">⬆️ RESTORE</button>
+                            <button class="action-btn btn-compact btn-gold" onclick="playSFX(); fetchTeacherAnalytics()">ANALITIK KELAS</button>
+                            <button class="secondary-btn btn-compact" onclick="playSFX(); exportSoal()" title="Unduh File Backup JSON">BACKUP</button>
+                            <button class="secondary-btn btn-compact" onclick="playSFX(); document.getElementById('import-file').click()" title="Unggah File Backup JSON">RESTORE</button>
                             <input type="file" id="import-file" style="display: none;" accept=".json" onchange="importSoal(event)">
                         </div>
                     </div>
@@ -225,7 +237,9 @@
                     <!-- Soal Cards Container -->
                     <div id="admin-soal-list" class="admin-soal-list">
                         <div class="empty-placeholder">
-                            <div style="font-size: 40px; margin-bottom: 10px;">🔍</div>
+                            <div style="margin-bottom: 10px;">
+                                <img src="favicon.png" class="brand-logo-img" style="width: 40px; height: 40px; opacity: 0.6; margin: 0 auto;" alt="Cari">
+                            </div>
                             <p>Silakan pilih Bahasa dan Level di atas, lalu klik <b>Tampilkan</b> untuk memuat daftar soal.</p>
                         </div>
                     </div>
@@ -236,14 +250,14 @@
                     <div class="section-card text-left" style="max-width: 100%;">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <div>
-                                <h3 style="color: #e3b341; margin-bottom: 4px;">👑 KONTROL SEMUA PENGGUNA</h3>
+                                <h3 style="color: #e3b341; margin-bottom: 4px;">KONTROL SEMUA PENGGUNA</h3>
                                 <p style="color: #94a3b8; font-size: 13px;">Kelola akun siswa, guru, dan admin, ubah role hak akses, atau reset password.</p>
                             </div>
-                            <button class="action-btn btn-compact btn-blue" onclick="fetchUsersList()">🔄 REFRESH DATA</button>
+                            <button class="action-btn btn-compact btn-blue" onclick="fetchUsersList()">REFRESH DATA</button>
                         </div>
 
                         <div class="search-box-wrapper mb-3">
-                            <input type="text" id="search-users-input" class="terminal-input search-input" placeholder="🔍 Cari berdasarkan username, email, atau role..." onkeyup="searchUsersList()">
+                            <input type="text" id="search-users-input" class="terminal-input search-input" placeholder="Cari berdasarkan username, email, atau role..." onkeyup="searchUsersList()">
                         </div>
 
                         <div class="table-responsive">
@@ -267,38 +281,38 @@
                 <!-- PANE 3: STATISTIK SISTEM GLOBAL (SUPER ADMIN) -->
                 <div id="pane-admin-system" class="admin-tab-pane" style="display: none;">
                     <div class="section-card text-left" style="max-width: 100%;">
-                        <h3 style="color: #38bdf8; margin-bottom: 6px;">🛡️ RINGKASAN DATA & STATISTIK SISTEM</h3>
+                        <h3 style="color: #38bdf8; margin-bottom: 6px;">RINGKASAN DATA & STATISTIK SISTEM</h3>
                         <p style="color: #94a3b8; font-size: 13px; margin-bottom: 25px;">Metrik performa platform dan total aktivitas pengguna di TiDB Cloud.</p>
 
                         <div class="stats-overview-grid mb-4">
                             <div class="stat-card">
-                                <span class="stat-card-title">👥 Total Pengguna Terdaftar</span>
+                                <span class="stat-card-title">Total Pengguna Terdaftar</span>
                                 <span id="sys-total-users" class="stat-card-value text-blue">0</span>
                             </div>
                             <div class="stat-card">
-                                <span class="stat-card-title">🎒 Siswa (Hunter)</span>
+                                <span class="stat-card-title">Siswa (Hunter)</span>
                                 <span id="sys-total-siswa" class="stat-card-value text-green">0</span>
                             </div>
                             <div class="stat-card">
-                                <span class="stat-card-title">👨‍🏫 Guru (Evaluator)</span>
+                                <span class="stat-card-title">Guru (Evaluator)</span>
                                 <span id="sys-total-guru" class="stat-card-value text-gold">0</span>
                             </div>
                             <div class="stat-card">
-                                <span class="stat-card-title">👑 Super Admin</span>
+                                <span class="stat-card-title">Super Admin</span>
                                 <span id="sys-total-admin" class="stat-card-value text-gold">0</span>
                             </div>
                             <div class="stat-card">
-                                <span class="stat-card-title">📚 Total Soal di Bank Soal</span>
+                                <span class="stat-card-title">Total Soal di Bank Soal</span>
                                 <span id="sys-total-questions" class="stat-card-value text-blue">0</span>
                             </div>
                             <div class="stat-card">
-                                <span class="stat-card-title">🎯 Total Percobaan Jawaban</span>
+                                <span class="stat-card-title">Total Percobaan Jawaban</span>
                                 <span id="sys-total-attempts" class="stat-card-value text-green">0</span>
                             </div>
                         </div>
 
                         <div style="background: rgba(15, 23, 42, 0.7); border: 1px dashed #334155; padding: 20px; border-radius: 10px;">
-                            <h4 style="color: #e2e8f0; margin-bottom: 8px;">ℹ️ Tips Keamanan Super Admin:</h4>
+                            <h4 style="color: #e2e8f0; margin-bottom: 8px;">Tips Keamanan Super Admin:</h4>
                             <p style="color: #94a3b8; font-size: 13px; line-height: 1.6;">
                                 • Jangan membagikan kredensial Super Admin kepada siapapun.<br>
                                 • Anda dapat mereset password akun <b>superadmin</b> kapan saja melalui tab <i>Manajemen Pengguna</i>.<br>
@@ -394,7 +408,7 @@
                 <div class="popup-box modal-large">
                     <div class="modal-header">
                         <div style="display: flex; align-items: center; gap: 10px;">
-                            <span style="font-size: 24px;">📊</span>
+                            <img src="favicon.png" class="brand-logo-img" style="width: 24px; height: 24px; margin: 0;" alt="Analitik">
                             <h2 class="modal-title" style="color: #e3b341;">ANALITIK EVALUASI KELAS</h2>
                         </div>
                         <button class="btn-close-modal" onclick="document.getElementById('overlay-analytics').style.display='none'">✕</button>
@@ -448,28 +462,36 @@
                     
                     <div class="dashboard-menu-grid">
                         <div class="menu-tile primary-tile" onclick="playSFX(); goToFrame('frame-03')">
-                            <div class="tile-icon">🎮</div>
+                            <div class="tile-icon">
+                                <img src="favicon.png" class="brand-logo-img" style="width: 32px; height: 32px; margin: 0;" alt="Mulai">
+                            </div>
                             <h3>MULAI BERMAIN</h3>
                             <p>Pilih bahasa pemrograman & taklukkan 10 misi simulasi bug.</p>
                             <span class="tile-arrow">MAIN SEKARANG ➜</span>
                         </div>
 
                         <div class="menu-tile" onclick="playSFX(); showStudentStats()">
-                            <div class="tile-icon">📈</div>
+                            <div class="tile-icon">
+                                <img src="favicon.png" class="brand-logo-img" style="width: 32px; height: 32px; margin: 0;" alt="Rapor">
+                            </div>
                             <h3>RAPOR SAYA</h3>
                             <p>Pantau persentase akurasi & riwayat penyelesaian bug kodingmu.</p>
                             <span class="tile-arrow">LIHAT STATISTIK ➜</span>
                         </div>
 
                         <div class="menu-tile" onclick="playSFX(); loadLeaderboard()">
-                            <div class="tile-icon">🏆</div>
+                            <div class="tile-icon">
+                                <img src="favicon.png" class="brand-logo-img" style="width: 32px; height: 32px; margin: 0;" alt="Leaderboard">
+                            </div>
                             <h3>LEADERBOARD</h3>
                             <p>Lihat peringkat Top 10 Hunter dengan perolehan skor tertinggi.</p>
                             <span class="tile-arrow">PAPAN SKOR ➜</span>
                         </div>
 
                         <div class="menu-tile" onclick="playSFX(); goToFrame('frame-02')">
-                            <div class="tile-icon">📖</div>
+                            <div class="tile-icon">
+                                <img src="favicon.png" class="brand-logo-img" style="width: 32px; height: 32px; margin: 0;" alt="Panduan">
+                            </div>
                             <h3>PANDUAN ATURAN</h3>
                             <p>Pelajari aturan bonus waktu, penalti hint, dan sistem badge.</p>
                             <span class="tile-arrow">BACA PANDUAN ➜</span>
@@ -482,7 +504,7 @@
             <div id="frame-rapor" class="frame">
                 <div class="section-card">
                     <div class="section-header">
-                        <h2>📊 RAPOR AKADEMIK HUNTER</h2>
+                        <h2>RAPOR AKADEMIK HUNTER</h2>
                         <p>Evaluasi menyeluruh akurasi dan performa debugging Anda.</p>
                     </div>
 
@@ -506,19 +528,19 @@
 
                     <div class="stats-overview-grid">
                         <div class="stat-card">
-                            <span class="stat-card-title">📝 Total Soal Diselesaikan</span>
+                            <span class="stat-card-title">Total Soal Diselesaikan</span>
                             <span id="stat-total" class="stat-card-value text-blue">0</span>
                         </div>
                         <div class="stat-card">
-                            <span class="stat-card-title">✅ Jawaban Tepat</span>
+                            <span class="stat-card-title">Jawaban Tepat</span>
                             <span id="stat-benar" class="stat-card-value text-green">0</span>
                         </div>
                         <div class="stat-card">
-                            <span class="stat-card-title">❌ Total Klik Salah</span>
+                            <span class="stat-card-title">Total Klik Salah</span>
                             <span id="stat-gagal" class="stat-card-value text-red">0</span>
                         </div>
                         <div class="stat-card highlight-card">
-                            <span class="stat-card-title">🎯 Akurasi Pemahaman</span>
+                            <span class="stat-card-title">Akurasi Pemahaman</span>
                             <span id="stat-akurasi" class="stat-card-value text-gold">0%</span>
                             <div class="progress-bar-container mt-2">
                                 <div id="stat-akurasi-bar" class="progress-bar-fill" style="width: 0%;"></div>
@@ -536,12 +558,12 @@
             <div id="frame-leaderboard" class="frame">
                 <div class="section-card">
                     <div class="section-header">
-                        <h2 style="color: #e3b341;">🏆 TOP BUG HUNTERS HALL OF FAME</h2>
+                        <h2 style="color: #e3b341;">TOP BUG HUNTERS HALL OF FAME</h2>
                         <p>Peringkat developer dengan ketelitian dan kecepatan tertinggi.</p>
                     </div>
 
                     <div class="search-box-wrapper mb-3">
-                        <input type="text" id="search-leaderboard" class="terminal-input search-input" placeholder="🔍 Cari nama hunter..." onkeyup="searchLeaderboard()">
+                        <input type="text" id="search-leaderboard" class="terminal-input search-input" placeholder="Cari nama hunter..." onkeyup="searchLeaderboard()">
                     </div>
 
                     <div class="table-responsive">
@@ -568,7 +590,7 @@
             <div id="frame-02" class="frame">
                 <div class="section-card text-left">
                     <div class="section-header text-center">
-                        <h2>📖 PANDUAN SISTEM GAMEPLAY</h2>
+                        <h2>PANDUAN SISTEM GAMEPLAY</h2>
                         <p>Pelajari mekanisme penilaian skor, nyawa, dan strategi bermain.</p>
                     </div>
 
@@ -583,8 +605,8 @@
                         <div class="rule-item">
                             <span class="rule-num">2</span>
                             <div>
-                                <h4>Sistem Nyawa (HP)</h4>
-                                <p>Kamu memulai dengan <b>3 Nyawa (❤️❤️❤️)</b>. Nyawa akan berkurang 1 jika kamu menggunakan tombol BANTUAN (Hint) atau jika gagal 5x dalam satu soal.</p>
+                                <h4>Sistem Integritas HP</h4>
+                                <p>Kamu memulai dengan <b>3 Poin Integritas (HP)</b>. HP akan berkurang 1 jika kamu menggunakan tombol BANTUAN (Hint) atau jika gagal 5x dalam satu soal.</p>
                             </div>
                         </div>
                         <div class="rule-item">
@@ -598,7 +620,7 @@
                             <span class="rule-num">4</span>
                             <div>
                                 <h4>Bonus Kecepatan & Penalti Hint</h4>
-                                <p>✔️ <b>Bonus Kecepatan</b> (hingga +60 Poin) aktif jika kamu menebak tepat di kesempatan pertama!<br>⚠️ <b>Penggunaan Hint</b> memotong skor dasar soal sebanyak <b>50%</b> dan mengurangi 1 HP.</p>
+                                <p><b>Bonus Kecepatan</b> (hingga +60 Poin) aktif jika kamu menebak tepat di kesempatan pertama!<br><b>Penggunaan Hint</b> memotong skor dasar soal sebanyak <b>50%</b> dan mengurangi 1 HP.</p>
                             </div>
                         </div>
                         <div class="rule-item">
@@ -626,27 +648,27 @@
 
                     <div class="language-selection-grid">
                         <button id="lang-python" class="lang-btn" onclick="playSFX(); selectLang('python')">
-                            <span class="lang-icon">🐍</span>
+                            <span class="lang-code">PY</span>
                             <span class="lang-title">PYTHON</span>
                         </button>
                         <button id="lang-javascript" class="lang-btn" onclick="playSFX(); selectLang('javascript')">
-                            <span class="lang-icon">🟨</span>
+                            <span class="lang-code">JS</span>
                             <span class="lang-title">JAVASCRIPT</span>
                         </button>
                         <button id="lang-java" class="lang-btn" onclick="playSFX(); selectLang('java')">
-                            <span class="lang-icon">☕</span>
+                            <span class="lang-code">JAVA</span>
                             <span class="lang-title">JAVA</span>
                         </button>
                         <button id="lang-php" class="lang-btn" onclick="playSFX(); selectLang('php')">
-                            <span class="lang-icon">🐘</span>
+                            <span class="lang-code">PHP</span>
                             <span class="lang-title">PHP</span>
                         </button>
                         <button id="lang-cpp" class="lang-btn" onclick="playSFX(); selectLang('cpp')">
-                            <span class="lang-icon">⚙️</span>
+                            <span class="lang-code">C++</span>
                             <span class="lang-title">C++</span>
                         </button>
                         <button id="lang-css" class="lang-btn" onclick="playSFX(); selectLang('css')">
-                            <span class="lang-icon">🎨</span>
+                            <span class="lang-code">CSS</span>
                             <span class="lang-title">CSS</span>
                         </button>
                     </div>
@@ -685,7 +707,11 @@
                 <div class="arcade-hud">
                     <div class="hud-item hud-hp">
                         <span class="hud-label">HP</span>
-                        <span id="hp-display" class="hud-value-hp">❤️❤️❤️</span>
+                        <div id="hp-display" class="hud-value-hp">
+                            <span class="hp-point filled"></span>
+                            <span class="hp-point filled"></span>
+                            <span class="hp-point filled"></span>
+                        </div>
                     </div>
 
                     <div class="hud-item hud-score">
@@ -716,7 +742,7 @@
                         <span class="action-hint-text">Klik baris kode yang menurutmu memiliki bug!</span>
                     </div>
                     <button id="btn-hint" class="hint-action-btn" onclick="useHint()">
-                        💡 BANTUAN (-1 HP)
+                        BANTUAN (-1 HP)
                     </button>
                 </div>
 
@@ -732,7 +758,7 @@
                             <span class="dot dot-green"></span>
                         </div>
                         <div class="editor-tab active-tab">
-                            <span class="tab-icon">📄</span>
+                            <span class="tab-icon">&lt;/&gt;</span>
                             <span id="editor-tab-filename">main.py</span>
                         </div>
                         <div class="editor-titlebar-right">
@@ -747,7 +773,7 @@
             <!-- POPUP MODAL: TEBAK TIPE ERROR -->
             <div id="overlay-popup" class="overlay">
                 <div class="popup-box modal-medium">
-                    <div class="popup-badge">🎯 BARIS BUG TERDETEKSI!</div>
+                    <div class="popup-badge">BARIS BUG TERDETEKSI!</div>
                     <h2 class="popup-title">ANALISIS JENIS ERROR</h2>
                     <p id="popup-line-info" class="popup-line-desc">Baris #1</p>
                     <p style="color: #94a3b8; font-size: 14px; margin-bottom: 20px;">Jenis error apa yang terjadi pada baris kode tersebut?</p>
@@ -773,28 +799,28 @@
             <div id="frame-06" class="frame">
                 <div class="section-card">
                     <div class="section-header">
-                        <h2>📖 PEMBAHASAN TELAAH KODE</h2>
+                        <h2>PEMBAHASAN TELAAH KODE</h2>
                         <p>Skor Terkumpul: <b id="review-score" class="text-green font-mono" style="font-size: 20px;">0</b> Poin</p>
                     </div>
 
                     <div class="diff-split-container">
                         <div class="diff-box diff-box-wrong">
                             <div class="diff-header diff-wrong-header">
-                                <span>❌ KODE BERMASALAH</span>
+                                <span>KODE SEBELUM PERBAIKAN</span>
                             </div>
                             <pre class="diff-code-wrapper"><code id="review-wrong"></code></pre>
                         </div>
 
                         <div class="diff-box diff-box-right">
                             <div class="diff-header diff-right-header">
-                                <span>✅ KODE PERBAIKAN</span>
+                                <span>KODE SOLUSI / PERBAIKAN</span>
                             </div>
                             <pre class="diff-code-wrapper"><code id="review-right"></code></pre>
                         </div>
                     </div>
 
                     <div class="explanation-card">
-                        <div class="explanation-title">💡 Analisis & Penjelasan:</div>
+                        <div class="explanation-title">Analisis & Penjelasan Solusi:</div>
                         <p id="review-explanation" class="explanation-text"></p>
                     </div>
 
@@ -813,7 +839,9 @@
             <div id="frame-apresiasi" class="frame">
                 <div class="appreciation-card">
                     <div class="completion-pill">EVALUASI SELESAI</div>
-                    <div id="badge-icon" class="trophy-icon">🏆</div>
+                    <div id="badge-icon" class="trophy-icon">
+                        <img src="favicon.png" class="trophy-img" alt="Predikat Keberhasilan">
+                    </div>
                     <h1 class="completion-title">MISI SELESAI!</h1>
                     <p style="color: #94a3b8; font-size: 16px;">Sistem evaluasi Code Bug Hunter telah mencatat hasil performa Anda.</p>
 
@@ -827,10 +855,10 @@
 
                     <div class="appreciation-actions">
                         <button class="action-btn btn-blue" onclick="playSFX(); downloadCertificate()">
-                            📜 UNDUH SERTIFIKAT RESMI (PDF)
+                            UNDUH SERTIFIKAT RESMI (PDF)
                         </button>
                         <button class="secondary-btn" onclick="playSFX(); resetGameToDashboard()">
-                            🏠 KEMBALI KE DASHBOARD
+                            KEMBALI KE DASHBOARD
                         </button>
                     </div>
                 </div>
